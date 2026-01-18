@@ -1,5 +1,5 @@
 [project]
-name = "hacs-teletask"
+name = "hacs-teletask-micros-rs232"
 version = "1.4.0"
 description = "TeleTask MICROS integration for Home Assistant"
 readme = "README.md"
