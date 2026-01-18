@@ -1,7 +1,7 @@
 
 #################################################################################################
 # File:    teletask_hub.py
-# Version: 1.3 - Added inputs (binary) and sensors (analog) support
+# Version: 1.4 - Added get_matter_enabled_devices() for label assignment
 #################################################################################################
 
 import logging
@@ -210,3 +210,49 @@ class TeletaskHub:
     def get_sensor_value(self, num: int) -> Optional[float]:
         """Get the current value of an analog sensor."""
         return self.sensor_state.get(num)
+
+    def get_matter_enabled_devices(self) -> Dict[str, set]:
+        """
+        Get all device numbers where matter=true, grouped by type.
+
+        Returns:
+            Dict with keys 'relays', 'dimmers', 'flags', 'inputs', 'sensors'
+            and values as sets of device numbers.
+        """
+        result = {
+            "relays": set(),
+            "dimmers": set(),
+            "flags": set(),
+            "inputs": set(),
+            "sensors": set(),
+        }
+
+        if not self.device_config:
+            return result
+
+        # Collect relays with matter=true
+        for dev in self.device_config.get_all_relays():
+            if dev.matter:
+                result["relays"].add(dev.num)
+
+        # Collect dimmers with matter=true
+        for dev in self.device_config.get_all_dimmers():
+            if dev.matter:
+                result["dimmers"].add(dev.num)
+
+        # Collect flags with matter=true
+        for dev in self.device_config.get_all_flags():
+            if dev.matter:
+                result["flags"].add(dev.num)
+
+        # Collect inputs with matter=true
+        for dev in self.device_config.get_all_inputs():
+            if dev.matter:
+                result["inputs"].add(dev.num)
+
+        # Collect sensors with matter=true
+        for dev in self.device_config.get_all_sensors():
+            if dev.matter:
+                result["sensors"].add(dev.num)
+
+        return result

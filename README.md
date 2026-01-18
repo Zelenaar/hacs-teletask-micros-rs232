@@ -176,11 +176,31 @@ Create the folder structure and file at `/config/packages/teletask/devices.json`
 
 ## Matter Bridge Support
 
-Devices with `"matter": true` will have a `matter_enabled` attribute. To expose them via Matter:
+Devices with `"matter": true` will automatically receive the `matterhomes` label in Home Assistant. This makes it easy to expose them via Matter using either the official Matter Server or the Matterbridge add-on.
 
-1. Install the **Matter Server** add-on
+### Option A: Matterbridge Add-on (Recommended)
+
+The [Matterbridge add-on](https://github.com/Luligu/matterbridge-home-assistant-addon) provides an easy way to expose HA entities to Matter without requiring Thread border routers.
+
+**Installation:**
+
+1. Go to **Settings** → **Add-ons** → **Add-on Store**
+2. Click the three dots menu → **Repositories**
+3. Add: `https://github.com/Luligu/matterbridge-home-assistant-addon`
+4. Find **Matterbridge** in the store and click **Install**
+5. Start the add-on and open the **Web UI**
+
+**Configure to use the matterhomes label:**
+
+1. In the Matterbridge Web UI, go to **Settings**
+2. Set the entity filter to: `label:matterhomes`
+3. Only TeleTask entities with `matter: true` will be exposed
+
+### Option B: Official Matter Server
+
+1. Install the **Matter Server** add-on from the Add-on Store
 2. Go to **Settings** → **Devices & Services** → **Matter** → **Configure**
-3. Select entities where `matter_enabled: true`
+3. Select entities to expose (look for the `matterhomes` label)
 
 ## File Structure
 
