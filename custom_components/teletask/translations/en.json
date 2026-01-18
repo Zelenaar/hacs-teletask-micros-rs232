@@ -1,0 +1,31 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "TeleTask MICROS Connection",
+        "description": "Enter the connection details for your TeleTask MICROS system.",
+        "data": {
+          "host": "Host (IP address or hostname)",
+          "port": "Port (TCP port number)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to TeleTask MICROS",
+      "unknown": "Unknown error occurred"
+    },
+    "abort": {
+      "already_configured": "TeleTask MICROS is already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "TeleTask Options",
+        "data": {
+          "scan_interval": "Scan interval (seconds)"
+        }
+      }
+    }
+  }
+}

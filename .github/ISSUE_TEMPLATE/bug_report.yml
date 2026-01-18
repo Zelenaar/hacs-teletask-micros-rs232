@@ -1,0 +1,82 @@
+name: Bug Report
+description: Report a bug with the TeleTask integration
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug!
+        Please fill out the information below to help us diagnose the issue.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is.
+      placeholder: Tell us what happened...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce this issue?
+      placeholder: |
+        1. Go to '...'
+        2. Click on '...'
+        3. See error
+    validations:
+      required: true
+
+  - type: input
+    id: ha-version
+    attributes:
+      label: Home Assistant version
+      description: What version of Home Assistant are you running?
+      placeholder: "2024.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: integration-version
+    attributes:
+      label: Integration version
+      description: What version of this integration are you using?
+      placeholder: "1.4.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: connection-type
+    attributes:
+      label: Connection type
+      description: How is your TeleTask MICROS connected?
+      options:
+        - Serial (RS232)
+        - USB-to-Serial adapter
+        - Serial over IP (TCP)
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Please paste any relevant log output from Home Assistant.
+      render: shell
+
+  - type: textarea
+    id: config
+    attributes:
+      label: devices.json configuration
+      description: Please paste your devices.json (remove sensitive info if needed).
+      render: json

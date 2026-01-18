@@ -1,0 +1,25 @@
+
+set_mood:
+  name: Set mood
+  description: Activate or toggle a mood.
+  fields:
+    number:
+      description: Mood number.
+      example: 1
+    type:
+      description: LOCAL or GENERAL
+      example: LOCAL
+    state:
+      description: ON / OFF / TOGGLE
+      example: ON
+
+set_flag:
+  name: Set flag
+  description: Write flag state.
+  fields:
+    number:
+      description: Flag number
+      example: 5
+    state:
+      description: ON / OFF / TOGGLE
+      example: TOGGLE
