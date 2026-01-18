@@ -51,11 +51,20 @@ Home Assistant custom integration for **TeleTask MICROS** home automation system
 
 ### Step 2: Create Configuration Files
 
-You need to create two configuration files in your Home Assistant config folder.
+Create a `teletask` folder in your Home Assistant config directory with two configuration files.
 
-#### 2.1 Create `config.json` (Connection Settings)
+#### 2.1 Create the folder structure
 
-Create a file at `/config/config.json` with your connection settings:
+```
+config/
+└── teletask/
+    ├── config.json      # Connection settings
+    └── devices.json     # Device configuration
+```
+
+#### 2.2 Create `teletask/config.json` (Connection Settings)
+
+Create a file at `/config/teletask/config.json` with your connection settings:
 
 **For TCP/IP connection (recommended):**
 ```json
@@ -100,9 +109,9 @@ Create a file at `/config/config.json` with your connection settings:
 - `COM6` - Windows serial port
 - `/dev/ttyUSB0` - Linux serial port
 
-#### 2.2 Create `packages/teletask/devices.json` (Device Configuration)
+#### 2.3 Create `teletask/devices.json` (Device Configuration)
 
-Create the folder structure and file at `/config/packages/teletask/devices.json`:
+Create the file at `/config/teletask/devices.json`:
 
 ```json
 {
@@ -178,9 +187,27 @@ Create the folder structure and file at `/config/packages/teletask/devices.json`
 
 Devices with `"matter": true` will automatically receive the `matterhomes` label in Home Assistant. This makes it easy to expose them via Matter using either the official Matter Server or the Matterbridge add-on.
 
-### Option A: Matterbridge Add-on (Recommended)
+### Option A: Home Assistant Matter Hub (Recommended)
 
-The [Matterbridge add-on](https://github.com/Luligu/matterbridge-home-assistant-addon) provides an easy way to expose HA entities to Matter without requiring Thread border routers.
+The [Home Assistant Matter Hub](https://github.com/t0bst4r/home-assistant-matter-hub) by t0bst4r exposes HA entities as Matter devices. It supports filtering by labels.
+
+**Installation:**
+
+1. Go to **Settings** → **Add-ons** → **Add-on Store**
+2. Click the three dots menu → **Repositories**
+3. Add: `https://github.com/t0bst4r/home-assistant-matter-hub`
+4. Find **Home Assistant Matter Hub** in the store and click **Install**
+5. Start the add-on and open the **Web UI**
+
+**Configure to use the matterhomes label:**
+
+1. In the Web UI, create a new bridge
+2. Set the entity filter to include label: `matterhomes`
+3. Only TeleTask entities with `matter: true` will be exposed
+
+### Option B: Matterbridge Add-on
+
+The [Matterbridge add-on](https://github.com/Luligu/matterbridge-home-assistant-addon) by Luligu is another option for exposing HA entities to Matter.
 
 **Installation:**
 
@@ -192,11 +219,11 @@ The [Matterbridge add-on](https://github.com/Luligu/matterbridge-home-assistant-
 
 **Configure to use the matterhomes label:**
 
-1. In the Matterbridge Web UI, go to **Settings**
+1. In the Matterbridge Web UI, go to **Home Assistant** plugin settings
 2. Set the entity filter to: `label:matterhomes`
 3. Only TeleTask entities with `matter: true` will be exposed
 
-### Option B: Official Matter Server
+### Option C: Official Matter Server
 
 1. Install the **Matter Server** add-on from the Add-on Store
 2. Go to **Settings** → **Devices & Services** → **Matter** → **Configure**
@@ -208,10 +235,9 @@ After setup, your config folder should look like:
 
 ```
 config/
-├── config.json                 # Connection settings
-├── packages/
-│   └── teletask/
-│       └── devices.json        # Device configuration
+├── teletask/
+│   ├── config.json             # Connection settings
+│   └── devices.json            # Device configuration
 └── custom_components/
     └── teletask/               # Integration (installed by HACS)
 ```
@@ -224,19 +250,20 @@ config/
 - Restart Home Assistant
 
 ### Cannot connect to MICROS
-- Verify `config.json` exists in your config folder
+- Verify `teletask/config.json` exists in your config folder
 - Check IP address/port or serial port settings
 - Verify firewall allows the connection
 - Test network connectivity to your serial-over-IP device
 
 ### Devices not appearing
-- Verify `packages/teletask/devices.json` exists and has valid JSON
+- Verify `teletask/devices.json` exists and has valid JSON
 - Check that `"ha": true` is set for devices you want to see
 - Restart Home Assistant after changing devices.json
 
 ### Config file not found error
-- Create `config.json` in your Home Assistant config folder (not in custom_components)
-- Ensure the file is valid JSON (use a JSON validator)
+- Create the `teletask` folder in your Home Assistant config directory
+- Create both `config.json` and `devices.json` inside the `teletask` folder
+- Ensure the files contain valid JSON (use a JSON validator)
 
 ## License
 

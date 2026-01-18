@@ -19,8 +19,10 @@ from .teletask.device_config import load_device_config_safe, DeviceConfig, Devic
 
 _LOGGER = logging.getLogger(__name__)
 
-# Default device config path relative to HA config directory
-DEVICES_CONFIG_PATH = "packages/teletask/devices.json"
+# Config paths relative to HA config directory
+TELETASK_CONFIG_DIR = "teletask"
+CONNECTION_CONFIG_FILE = "config.json"
+DEVICES_CONFIG_FILE = "devices.json"
 
 
 class TeletaskHub:
@@ -37,9 +39,12 @@ class TeletaskHub:
         self.hass = hass
         self.serial_port = data.get("serial_port", "")
 
-        # Build config path relative to HA config directory
+        # Build config paths relative to HA config directory
+        # All TeleTask config files are in config/teletask/
         config_dir = hass.config.path()
-        config_file = os.path.join(config_dir, "config.json")
+        teletask_dir = os.path.join(config_dir, TELETASK_CONFIG_DIR)
+        config_file = os.path.join(teletask_dir, CONNECTION_CONFIG_FILE)
+        devices_file = os.path.join(teletask_dir, DEVICES_CONFIG_FILE)
 
         self.client = MicrosRS232(
             config_path=config_file,
@@ -47,7 +52,6 @@ class TeletaskHub:
         )
 
         # Load device configuration
-        devices_file = os.path.join(config_dir, DEVICES_CONFIG_PATH)
         self.device_config: Optional[DeviceConfig] = load_device_config_safe(devices_file)
         if self.device_config:
             _LOGGER.info(
@@ -58,7 +62,7 @@ class TeletaskHub:
                 len(self.device_config.local_moods) + len(self.device_config.general_moods)
             )
         else:
-            _LOGGER.warning("No device config found at %s, using defaults", DEVICES_CONFIG_PATH)
+            _LOGGER.warning("No device config found at %s/%s, using defaults", TELETASK_CONFIG_DIR, DEVICES_CONFIG_FILE)
 
         # Latest states for HA entities
         self.relay_state: Dict[int, bool] = {}
