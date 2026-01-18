@@ -4,7 +4,7 @@
 [![GitHub Release](https://img.shields.io/github/release/Zelenaar/hacs-teletask-micros-rs232.svg)](https://github.com/Zelenaar/hacs-teletask-micros-rs232/releases)
 [![License](https://img.shields.io/github/license/Zelenaar/hacs-teletask-micros-rs232.svg)](LICENSE)
 
-Home Assistant custom integration for **TeleTask MICROS** home automation systems via RS232/TCP.
+Home Assistant custom integration for **TeleTask MICROS** home automation systems via RS232 or TCP/IP.
 
 ## Features
 
@@ -34,32 +34,75 @@ Home Assistant custom integration for **TeleTask MICROS** home automation system
 - Connection via:
   - Direct RS232 cable
   - USB-to-RS232 adapter
-  - Serial-over-IP device (e.g., Moxa NPort)
+  - Serial-over-IP device (e.g., Moxa NPort) - recommended
 
 ## Installation
 
-### HACS (Recommended)
+### Step 1: Install via HACS
 
 1. Open HACS in Home Assistant
 2. Click the three dots menu (top right) → **Custom repositories**
-3. Add this repository URL: `https://github.com/Zelenaar/hacs-teletask-micros-rs232`
+3. Add repository URL: `https://github.com/Zelenaar/hacs-teletask-micros-rs232`
 4. Select category: **Integration**
 5. Click **Add**
 6. Search for "TeleTask" in HACS
 7. Click **Download**
-8. Restart Home Assistant
+8. **Restart Home Assistant**
 
-### Manual Installation
+### Step 2: Create Configuration Files
 
-1. Download the latest release
-2. Extract and copy the `custom_components/teletask` folder to your Home Assistant `config/custom_components/` directory
-3. Restart Home Assistant
+You need to create two configuration files in your Home Assistant config folder.
 
-## Configuration
+#### 2.1 Create `config.json` (Connection Settings)
 
-### Step 1: Create devices.json
+Create a file at `/config/config.json` with your connection settings:
 
-Create a `devices.json` file in `config/packages/teletask/` with your device configuration:
+**For TCP/IP connection (recommended):**
+```json
+{
+  "serial": {
+    "port": "socket://192.168.1.100:4001",
+    "baudrate": 19200,
+    "timeout": 1.0
+  },
+  "reliability": {
+    "retries": 3,
+    "confirm_timeout_ms": 800,
+    "ack_timeout_ms": 300,
+    "retry_delay_ms": 250,
+    "post_send_gap_ms": 140,
+    "pre_send_flush": false
+  }
+}
+```
+
+**For direct serial connection:**
+```json
+{
+  "serial": {
+    "port": "COM6",
+    "baudrate": 19200,
+    "timeout": 1.0
+  },
+  "reliability": {
+    "retries": 3,
+    "confirm_timeout_ms": 800,
+    "ack_timeout_ms": 300,
+    "retry_delay_ms": 250,
+    "post_send_gap_ms": 140,
+    "pre_send_flush": false
+  }
+}
+```
+
+**Port examples:**
+- `socket://192.168.1.100:4001` - TCP/IP via Moxa NPort or similar
+- `COM6` - Windows serial port
+- `/dev/ttyUSB0` - Linux serial port
+
+#### 2.2 Create `packages/teletask/devices.json` (Device Configuration)
+
+Create the folder structure and file at `/config/packages/teletask/devices.json`:
 
 ```json
 {
@@ -72,14 +115,23 @@ Create a `devices.json` file in `config/packages/teletask/` with your device con
       "type": "light",
       "ha": true,
       "matter": true
+    },
+    {
+      "num": 2,
+      "name": "Wall Outlet",
+      "room": "Living Room",
+      "icon": "power-socket-eu",
+      "type": "switch",
+      "ha": true,
+      "matter": false
     }
   ],
   "dimmers": [
     {
       "num": 1,
-      "name": "Wall Dimmer",
-      "room": "Living Room",
-      "icon": "lightbulb-on",
+      "name": "Dining Light",
+      "room": "Dining Room",
+      "icon": "chandelier",
       "type": "",
       "ha": true,
       "matter": true
@@ -102,61 +154,69 @@ Create a `devices.json` file in `config/packages/teletask/` with your device con
 }
 ```
 
-### Step 2: Add the Integration
+### Step 3: Add the Integration
 
 1. Go to **Settings** → **Devices & Services**
 2. Click **+ Add Integration**
 3. Search for **TeleTask**
-4. Enter your connection details:
-   - **Host**: IP address or hostname (e.g., `192.168.1.100`)
-   - **Port**: TCP port (e.g., `4001`)
+4. Enter a serial port value (this can match your config.json or be a placeholder)
+5. Click **Submit**
 
-### Configuration Options
+### Configuration Field Reference
 
 | Field | Description |
 |-------|-------------|
-| `num` | TeleTask device number (from PROSOFT) |
-| `name` | Friendly name shown in HA |
+| `num` | TeleTask device number (from PROSOFT configuration) |
+| `name` | Friendly name shown in Home Assistant |
 | `room` | Room name for automatic area assignment |
-| `icon` | MDI icon name (without `mdi:` prefix) |
-| `type` | Device type: `light`/`switch` for relays, `LOCAL`/`GENERAL`/`TIMED` for moods |
-| `ha` | `true` to expose in Home Assistant |
-| `matter` | `true` to expose via Matter bridge |
+| `icon` | MDI icon name without `mdi:` prefix (see [MDI icons](https://pictogrammers.com/library/mdi/)) |
+| `type` | `light` or `switch` for relays; `LOCAL`, `GENERAL`, or `TIMED` for moods |
+| `ha` | `true` to expose in Home Assistant, `false` to hide |
+| `matter` | `true` to expose via Matter bridge (requires `ha: true`) |
 
 ## Matter Bridge Support
 
-Devices with `"matter": true` will have a `matter_enabled` attribute set to `true`. Use this to filter which entities to expose via the Home Assistant Matter integration:
+Devices with `"matter": true` will have a `matter_enabled` attribute. To expose them via Matter:
 
 1. Install the **Matter Server** add-on
 2. Go to **Settings** → **Devices & Services** → **Matter** → **Configure**
 3. Select entities where `matter_enabled: true`
 
-## Extracting Device Configuration
+## File Structure
 
-Use the included GUI tool to extract device configuration from PROSOFT NBT files:
+After setup, your config folder should look like:
 
-1. Run `gui/PHAeletaskV2_testGUI.py`
-2. Go to the **Extract** tab
-3. Select your `.NBT` file
-4. Click **Extract & Preview**
-5. Save the generated `devices.json`
+```
+config/
+├── config.json                 # Connection settings
+├── packages/
+│   └── teletask/
+│       └── devices.json        # Device configuration
+└── custom_components/
+    └── teletask/               # Integration (installed by HACS)
+```
 
 ## Troubleshooting
 
 ### Integration not found
-- Verify files are in `config/custom_components/teletask/`
-- Check Home Assistant logs for errors
+- Verify HACS downloaded the integration
+- Check that files exist in `config/custom_components/teletask/`
 - Restart Home Assistant
 
 ### Cannot connect to MICROS
-- Verify IP address and port
-- Check firewall settings
-- Test with the CLI tool: `python teletask_cli.py -i`
+- Verify `config.json` exists in your config folder
+- Check IP address/port or serial port settings
+- Verify firewall allows the connection
+- Test network connectivity to your serial-over-IP device
 
 ### Devices not appearing
-- Check `devices.json` syntax
-- Verify `"ha": true` is set
-- Restart Home Assistant after changes
+- Verify `packages/teletask/devices.json` exists and has valid JSON
+- Check that `"ha": true` is set for devices you want to see
+- Restart Home Assistant after changing devices.json
+
+### Config file not found error
+- Create `config.json` in your Home Assistant config folder (not in custom_components)
+- Ensure the file is valid JSON (use a JSON validator)
 
 ## License
 
@@ -165,3 +225,8 @@ MIT License - see [LICENSE](LICENSE) for details.
 ## Credits
 
 Developed for TeleTask MICROS home automation systems commonly used in Belgium and the Netherlands.
+
+## Support
+
+- [Report issues](https://github.com/Zelenaar/hacs-teletask-micros-rs232/issues)
+- [TeleTask website](https://www.teletask.be/)

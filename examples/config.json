@@ -1,0 +1,22 @@
+{
+  "_comment": "TeleTask connection configuration",
+  "_usage": "Copy this file to your HA config folder as 'config/config.json'",
+  "serial": {
+    "port": "socket://192.168.1.100:4001",
+    "_port_examples": [
+      "COM6 (Windows serial port)",
+      "socket://192.168.1.100:4001 (TCP/IP via Moxa or similar)",
+      "/dev/ttyUSB0 (Linux serial port)"
+    ],
+    "baudrate": 19200,
+    "timeout": 1.0
+  },
+  "reliability": {
+    "retries": 3,
+    "confirm_timeout_ms": 800,
+    "ack_timeout_ms": 300,
+    "retry_delay_ms": 250,
+    "post_send_gap_ms": 140,
+    "pre_send_flush": false
+  }
+}

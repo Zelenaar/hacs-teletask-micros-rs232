@@ -5,21 +5,22 @@
 #################################################################################################
 
 import logging
+import os
 from typing import Dict, Any, Optional, List
 
 from homeassistant.core import HomeAssistant
 
-from teletask.micros_rs232 import MicrosRS232
-from teletask.protocol import (
+from .teletask.micros_rs232 import MicrosRS232
+from .teletask.protocol import (
     FUNC_RELAY, FUNC_DIMMER, FUNC_FLAG,
     FUNC_LOCMOOD, FUNC_GENMOOD, FUNC_SENSOR
 )
-from teletask.device_config import load_device_config_safe, DeviceConfig, DeviceInfo, SensorInfo
+from .teletask.device_config import load_device_config_safe, DeviceConfig, DeviceInfo, SensorInfo
 
 _LOGGER = logging.getLogger(__name__)
 
 # Default device config path relative to HA config directory
-DEVICES_CONFIG_PATH = "config/devices.json"
+DEVICES_CONFIG_PATH = "packages/teletask/devices.json"
 
 
 class TeletaskHub:
@@ -36,13 +37,18 @@ class TeletaskHub:
         self.hass = hass
         self.serial_port = data.get("serial_port", "")
 
+        # Build config path relative to HA config directory
+        config_dir = hass.config.path()
+        config_file = os.path.join(config_dir, "config.json")
+
         self.client = MicrosRS232(
-            config_path="config/config.json",
+            config_path=config_file,
             log_callback=self._log_to_ha
         )
 
         # Load device configuration
-        self.device_config: Optional[DeviceConfig] = load_device_config_safe(DEVICES_CONFIG_PATH)
+        devices_file = os.path.join(config_dir, DEVICES_CONFIG_PATH)
+        self.device_config: Optional[DeviceConfig] = load_device_config_safe(devices_file)
         if self.device_config:
             _LOGGER.info(
                 "Loaded device config: %d relays, %d dimmers, %d flags, %d moods",
