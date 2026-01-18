@@ -1,0 +1,125 @@
+{
+  "_comment": "TeleTask device configuration - Example file",
+  "_version": "1.4",
+  "_ha_info": "ha=true exposes device to Home Assistant, matter=true also exposes via Matter (requires ha=true)",
+  "relays": [
+    {
+      "num": 1,
+      "name": "Ceiling Light",
+      "room": "Living Room",
+      "icon": "ceiling-light",
+      "type": "light",
+      "ha": true,
+      "matter": true
+    },
+    {
+      "num": 2,
+      "name": "Wall Outlet",
+      "room": "Living Room",
+      "icon": "power-socket-eu",
+      "type": "switch",
+      "ha": true,
+      "matter": false
+    },
+    {
+      "num": 3,
+      "name": "Bathroom Fan",
+      "room": "Bathroom",
+      "icon": "fan",
+      "type": "switch",
+      "ha": true,
+      "matter": false
+    }
+  ],
+  "dimmers": [
+    {
+      "num": 1,
+      "name": "Dining Light",
+      "room": "Dining Room",
+      "icon": "chandelier",
+      "type": "",
+      "ha": true,
+      "matter": true
+    },
+    {
+      "num": 2,
+      "name": "Wall Sconce",
+      "room": "Living Room",
+      "icon": "wall-sconce",
+      "type": "",
+      "ha": true,
+      "matter": true
+    }
+  ],
+  "moods": [
+    {
+      "num": 1,
+      "name": "All Off",
+      "room": "",
+      "icon": "lightbulb-group-off",
+      "type": "GENERAL",
+      "ha": true,
+      "matter": false
+    },
+    {
+      "num": 2,
+      "name": "All On",
+      "room": "",
+      "icon": "lightbulb-group",
+      "type": "GENERAL",
+      "ha": true,
+      "matter": false
+    },
+    {
+      "num": 3,
+      "name": "Welcome",
+      "room": "Living Room",
+      "icon": "home",
+      "type": "LOCAL",
+      "ha": true,
+      "matter": false
+    }
+  ],
+  "flags": [
+    {
+      "num": 1,
+      "name": "Alarm Active",
+      "room": "",
+      "icon": "shield-alert",
+      "type": "",
+      "ha": true,
+      "matter": false
+    }
+  ],
+  "inputs": [
+    {
+      "num": 1,
+      "name": "Front Door",
+      "room": "Entrance",
+      "icon": "door",
+      "type": "door",
+      "ha": true,
+      "matter": false
+    },
+    {
+      "num": 2,
+      "name": "Motion Sensor",
+      "room": "Hallway",
+      "icon": "motion-sensor",
+      "type": "motion",
+      "ha": true,
+      "matter": false
+    }
+  ],
+  "sensors": [
+    {
+      "num": 1,
+      "name": "Temperature",
+      "room": "Living Room",
+      "icon": "thermometer",
+      "type": "temperature",
+      "ha": true,
+      "matter": false
+    }
+  ]
+}
