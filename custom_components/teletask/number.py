@@ -24,9 +24,9 @@ async def async_setup_entry(
     """Set up TeleTask dimmer number entities from config entry."""
     hub = hass.data[DOMAIN][entry.entry_id]
 
-    # Create entities from configured dimmers (uses defaults if no config)
+    # Create entities from configured dimmers (only where ha=True)
     devices = hub.get_configured_dimmers()
-    entities = [TeletaskDimmerNumber(hub, dev, entry.entry_id) for dev in devices]
+    entities = [TeletaskDimmerNumber(hub, dev, entry.entry_id) for dev in devices if dev.ha]
     async_add_entities(entities)
 
 

@@ -19,7 +19,7 @@ from .teletask_hub import TeletaskHub
 _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = "teletask"
-PLATFORMS = ["switch", "light", "number", "binary_sensor", "sensor"]
+PLATFORMS = ["switch", "light", "number", "binary_sensor", "sensor", "button"]
 
 # Label for Matter-enabled devices (used by Matterbridge add-on)
 MATTER_LABEL_ID = "matterhomes"
@@ -115,14 +115,14 @@ def _should_have_matter_label(unique_id: str, matter_devices: dict) -> bool:
         return False
 
     # Parse unique_id format: teletask_{entry_id}_{type}_{num}
-    # Examples: teletask_xxx_dimmer_1, teletask_xxx_relay_light_1, teletask_xxx_relay_switch_1
+    # Examples: teletask_xxx_dimmer_1, teletask_xxx_relay_light_1, teletask_xxx_mood_local_1
     parts = unique_id.split("_")
     if len(parts) < 4 or parts[0] != "teletask":
         return False
 
     try:
         num = int(parts[-1])
-        device_type = "_".join(parts[2:-1])  # Handle relay_light, relay_switch, etc.
+        device_type = "_".join(parts[2:-1])  # Handle relay_light, relay_switch, mood_local, mood_general, etc.
 
         # Map entity types to config categories
         if device_type == "dimmer":
@@ -135,6 +135,10 @@ def _should_have_matter_label(unique_id: str, matter_devices: dict) -> bool:
             return num in matter_devices.get("inputs", set())
         elif device_type == "sensor":
             return num in matter_devices.get("sensors", set())
+        elif device_type in ("mood_local", "mood_general"):
+            # Moods are stored in separate local/general dictionaries
+            mood_type = "local_moods" if device_type == "mood_local" else "general_moods"
+            return num in matter_devices.get(mood_type, set())
     except (ValueError, IndexError):
         pass
 

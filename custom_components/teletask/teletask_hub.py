@@ -10,12 +10,12 @@ from typing import Dict, Any, Optional, List
 
 from homeassistant.core import HomeAssistant
 
-from .teletask.micros_rs232 import MicrosRS232
-from .teletask.protocol import (
+from teletask.micros_rs232 import MicrosRS232
+from teletask.protocol import (
     FUNC_RELAY, FUNC_DIMMER, FUNC_FLAG,
     FUNC_LOCMOOD, FUNC_GENMOOD, FUNC_SENSOR
 )
-from .teletask.device_config import load_device_config_safe, DeviceConfig, DeviceInfo, SensorInfo
+from teletask.device_config import load_device_config_safe, DeviceConfig, DeviceInfo, SensorInfo
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -108,6 +108,23 @@ class TeletaskHub:
             return self.device_config.get_all_sensors()
         # Default: empty list (sensors must be explicitly configured)
         return []
+
+    def get_configured_moods(self) -> List[DeviceInfo]:
+        """Get list of configured moods (local + general)."""
+        if self.device_config:
+            return self.device_config.get_all_moods()
+        # Default: empty list (moods must be explicitly configured)
+        return []
+
+    def trigger_mood(self, num: int, mood_type: str = "LOCAL") -> None:
+        """
+        Trigger a mood (set to ON).
+
+        Args:
+            num: Mood number.
+            mood_type: 'LOCAL' or 'GENERAL'.
+        """
+        self.client.set_mood(num, "ON", mood_type)
 
     def _log_to_ha(self, msg: str) -> None:
         """
@@ -220,7 +237,7 @@ class TeletaskHub:
         Get all device numbers where matter=true, grouped by type.
 
         Returns:
-            Dict with keys 'relays', 'dimmers', 'flags', 'inputs', 'sensors'
+            Dict with keys 'relays', 'dimmers', 'flags', 'inputs', 'sensors', 'local_moods', 'general_moods'
             and values as sets of device numbers.
         """
         result = {
@@ -229,6 +246,8 @@ class TeletaskHub:
             "flags": set(),
             "inputs": set(),
             "sensors": set(),
+            "local_moods": set(),
+            "general_moods": set(),
         }
 
         if not self.device_config:
@@ -258,5 +277,15 @@ class TeletaskHub:
         for dev in self.device_config.get_all_sensors():
             if dev.matter:
                 result["sensors"].add(dev.num)
+
+        # Collect local moods with matter=true
+        for num, dev in self.device_config.local_moods.items():
+            if dev.matter:
+                result["local_moods"].add(num)
+
+        # Collect general moods with matter=true
+        for num, dev in self.device_config.general_moods.items():
+            if dev.matter:
+                result["general_moods"].add(num)
 
         return result
