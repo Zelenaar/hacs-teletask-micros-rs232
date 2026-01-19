@@ -56,7 +56,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Register frontend resources (static path for Lovelace card)
     # Note: The card is primarily loaded via manifest.json frontend section
     # This provides an alternative access path for development/debugging
-    await _register_frontend_resources(hass)
+    _register_frontend_resources(hass)
 
     # Load platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -117,22 +117,28 @@ def _register_services(hass: HomeAssistant, hub: TeletaskHub) -> None:
     _LOGGER.info("Registered TeleTask services: set_mood, set_flag")
 
 
-async def _register_frontend_resources(hass: HomeAssistant) -> None:
-    """Register static path and JS resource for TeleTask Test Card."""
-    static_path = os.path.join(os.path.dirname(__file__), "static")
+def _register_frontend_resources(hass: HomeAssistant) -> None:
+    """Register JS resource for TeleTask Test Card."""
+    static_dir = os.path.join(os.path.dirname(__file__), "static")
+    card_file = os.path.join(static_dir, "teletask-test-card.js")
 
-    if not os.path.exists(static_path):
-        _LOGGER.debug("Static directory not found at %s (card may not be built yet)", static_path)
+    # Check if the card JS file exists
+    if not os.path.exists(card_file):
+        _LOGGER.debug("TeleTask Test Card JS not found at %s", card_file)
         return
 
-    # Register static path for serving the JS file
-    resource_path = "/teletask_static"
-    await hass.http.async_register_static_paths(
-        [{"url": resource_path, "path": static_path}]
+    # Register static path using the app directly
+    from aiohttp import web
+
+    # Add static route to serve the card file
+    hass.http.app.router.add_static(
+        "/teletask_card",
+        static_dir,
+        name="teletask_card_static"
     )
 
     # Register the card JS as an extra module URL
-    js_url = f"{resource_path}/teletask-test-card.js"
+    js_url = "/teletask_card/teletask-test-card.js"
     add_extra_js_url(hass, js_url)
 
     _LOGGER.info("Registered TeleTask Test Card: %s", js_url)

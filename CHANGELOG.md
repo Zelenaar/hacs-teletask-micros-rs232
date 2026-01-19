@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.2] - 2026-01-20
+
+### Fixed
+- **Frontend resource registration error**: Fixed AttributeError in async_register_static_paths
+  - Error: "'dict' object has no attribute 'url_path'"
+  - Changed approach: Use aiohttp router.add_static() directly instead of HA HTTP API
+  - Static route registered at /teletask_card/teletask-test-card.js
+  - Card now loads successfully without errors
+  - **Impact:** Test card now accessible in Lovelace
+
 ## [1.9.1] - 2026-01-20
 
 ### Fixed
