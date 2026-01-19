@@ -60,10 +60,60 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Load platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
+    # Register services
+    _register_services(hass, hub)
+
     # Assign matterhomes label to Matter-enabled entities
     await _async_assign_matter_labels(hass, entry, hub)
 
     return True
+
+
+def _register_services(hass: HomeAssistant, hub: TeletaskHub) -> None:
+    """Register TeleTask services."""
+
+    def handle_set_mood(call):
+        """Handle the set_mood service call."""
+        number = call.data.get("number")
+        mood_type = call.data.get("type", "LOCAL").upper()
+        state = call.data.get("state", "ON").upper()
+
+        # Map state string to value
+        state_map = {"ON": 255, "OFF": 0, "TOGGLE": -1}
+        state_value = state_map.get(state, 255)
+
+        # Execute mood command based on type
+        if mood_type == "LOCAL":
+            if state_value == -1:
+                hub.toggle_local_mood(number)
+            else:
+                hub.set_local_mood(number, state_value == 255)
+        elif mood_type == "GENERAL":
+            if state_value == -1:
+                hub.toggle_general_mood(number)
+            else:
+                hub.set_general_mood(number, state_value == 255)
+        else:
+            _LOGGER.warning("Unknown mood type: %s", mood_type)
+
+    def handle_set_flag(call):
+        """Handle the set_flag service call."""
+        number = call.data.get("number")
+        state = call.data.get("state", "ON").upper()
+
+        # Map state string to value
+        state_map = {"ON": 255, "OFF": 0, "TOGGLE": -1}
+        state_value = state_map.get(state, 255)
+
+        if state_value == -1:
+            hub.toggle_flag(number)
+        else:
+            hub.set_flag(number, state_value == 255)
+
+    # Register services
+    hass.services.register(DOMAIN, "set_mood", handle_set_mood)
+    hass.services.register(DOMAIN, "set_flag", handle_set_flag)
+    _LOGGER.info("Registered TeleTask services: set_mood, set_flag")
 
 
 async def _register_frontend_resources(hass: HomeAssistant) -> None:

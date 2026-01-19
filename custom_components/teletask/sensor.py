@@ -107,4 +107,9 @@ class TeletaskSensor(TeletaskEntity, SensorEntity):
     @property
     def extra_state_attributes(self) -> Mapping[str, Any] | None:
         """Return extra state attributes including Matter exposure flag."""
-        return {"matter_enabled": self._sensor.matter}
+        return {
+            "matter_enabled": self._sensor.matter,
+            "teletask_function": 20,  # FUNC_SENSOR
+            "teletask_number": self._num,
+            "room": self._sensor.room,
+        }

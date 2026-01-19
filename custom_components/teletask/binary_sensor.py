@@ -80,7 +80,12 @@ class TeletaskFlag(TeletaskEntity, BinarySensorEntity):
     @property
     def extra_state_attributes(self) -> Mapping[str, Any] | None:
         """Return extra state attributes including Matter exposure flag."""
-        return {"matter_enabled": self._device.matter}
+        return {
+            "matter_enabled": self._device.matter,
+            "teletask_function": 15,  # FUNC_FLAG
+            "teletask_number": self._num,
+            "room": self._device.room,
+        }
 
 
 class TeletaskInput(TeletaskEntity, BinarySensorEntity):
@@ -118,4 +123,9 @@ class TeletaskInput(TeletaskEntity, BinarySensorEntity):
     @property
     def extra_state_attributes(self) -> Mapping[str, Any] | None:
         """Return extra state attributes including Matter exposure flag."""
-        return {"matter_enabled": self._device.matter}
+        return {
+            "matter_enabled": self._device.matter,
+            "teletask_function": 21,  # FUNC_INPUT
+            "teletask_number": self._num,
+            "room": self._device.room,
+        }

@@ -94,7 +94,12 @@ class TeletaskDimmer(TeletaskEntity, LightEntity):
     @property
     def extra_state_attributes(self) -> Mapping[str, Any] | None:
         """Return extra state attributes including Matter exposure flag."""
-        return {"matter_enabled": self._device.matter}
+        return {
+            "matter_enabled": self._device.matter,
+            "teletask_function": 2,  # FUNC_DIMMER
+            "teletask_number": self._num,
+            "room": self._device.room,
+        }
 
 
 class TeletaskRelayLight(TeletaskEntity, LightEntity):
@@ -144,4 +149,9 @@ class TeletaskRelayLight(TeletaskEntity, LightEntity):
     @property
     def extra_state_attributes(self) -> Mapping[str, Any] | None:
         """Return extra state attributes including Matter exposure flag."""
-        return {"matter_enabled": self._device.matter}
+        return {
+            "matter_enabled": self._device.matter,
+            "teletask_function": 1,  # FUNC_RELAY
+            "teletask_number": self._num,
+            "room": self._device.room,
+        }

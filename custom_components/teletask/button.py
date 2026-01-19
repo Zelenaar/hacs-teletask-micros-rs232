@@ -72,7 +72,12 @@ class TeletaskMoodButton(TeletaskEntity, ButtonEntity):
     @property
     def extra_state_attributes(self) -> Mapping[str, Any] | None:
         """Return extra state attributes including mood type and Matter exposure flag."""
+        # Map mood type to function code
+        func_map = {"LOCAL": 8, "GENERAL": 9, "TIMED": 10}
         return {
             "mood_type": self._mood_type,
-            "matter_enabled": self._device.matter
+            "matter_enabled": self._device.matter,
+            "teletask_function": func_map.get(self._mood_type, 8),
+            "teletask_number": self._num,
+            "room": self._device.room,
         }

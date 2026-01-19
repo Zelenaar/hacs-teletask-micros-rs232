@@ -40,10 +40,13 @@ export class DeviceControlTab extends LitElement {
       if (!entity.entity_id.includes('teletask')) continue;
 
       const attrs = entity.attributes;
+      // Add null check for attributes
+      if (!attrs) continue;
+
       let deviceType: DeviceType | null = null;
       let domain = entity.entity_id.split('.')[0];
 
-      // Determine device type from domain and attributes
+      // Determine device type from domain and teletask_function attribute
       if (type === 'relay') {
         if ((domain === 'light' || domain === 'switch') && attrs.teletask_function === 1) {
           deviceType = 'relay';
@@ -156,13 +159,13 @@ export class DeviceControlTab extends LitElement {
     if (!this._selectedDevice) return;
 
     try {
-      // Moods use the teletask.set_mood service
-      const state = action === 'on' ? 255 : action === 'off' ? 0 : -1; // -1 for toggle
+      // Moods use the teletask.set_mood service with string state values
+      const state = action === 'on' ? 'ON' : action === 'off' ? 'OFF' : 'TOGGLE';
 
       await this.hass.callService('teletask', 'set_mood', {
         number: this._selectedDevice.number,
-        state: state,
-        mood_type: this._moodType,
+        type: this._moodType,  // Fixed: was 'mood_type', should be 'type'
+        state: state,  // Fixed: use strings 'ON'/'OFF'/'TOGGLE', not numbers
       });
 
       this._result = `${this._selectedDevice.name} (${this._moodType}): ${action.toUpperCase()}`;

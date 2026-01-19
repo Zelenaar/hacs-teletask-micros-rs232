@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.0] - 2026-01-20
+
+### CRITICAL FIXES - Test Card Now Fully Functional
+
+**Backend (Python) Changes:**
+1. **Added teletask_function and teletask_number attributes to ALL entities**
+   - light.py: Dimmers (func=2) and Relay Lights (func=1)
+   - switch.py: Relay Switches (func=1)
+   - button.py: Moods (func=8/9/10 based on type)
+   - binary_sensor.py: Flags (func=15) and Inputs (func=21)
+   - sensor.py: Sensors (func=20)
+   - Also added room attribute for better device display
+   - **Fixes:** Test card can now properly filter and display devices
+
+2. **Registered teletask.set_mood and teletask.set_flag services**
+   - __init__.py: Added _register_services() function
+   - Services accept string states: "ON", "OFF", "TOGGLE"
+   - set_mood: parameters number, type (LOCAL/GENERAL), state
+   - set_flag: parameters number, state
+   - **Fixes:** Mood and flag controls in test card now work
+
+**Frontend (TypeScript) Changes:**
+3. **Fixed mood service call parameters**
+   - device-control-tab.ts: Changed mood_type → type (correct parameter name)
+   - Changed numeric states (255/0/-1) → string states ("ON"/"OFF"/"TOGGLE")
+   - **Fixes:** Mood activation now works correctly
+
+4. **Added null checks for entity attributes**
+   - device-control-tab.ts: Added `if (!attrs) continue;` check
+   - Prevents crashes when entities have missing attributes
+   - **Fixes:** Card works reliably even with incomplete entity data
+
+**Test Card Version:** v1.9.0 (was v1.8.1)
+
+### Impact
+- **Before v1.9.0:** Test card was completely non-functional - no devices appeared, services didn't exist
+- **After v1.9.0:** Test card fully operational - can test relays, dimmers, moods, flags with real-time control
+
 ## [1.8.4] - 2026-01-20
 
 ### Fixed
