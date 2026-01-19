@@ -34,7 +34,8 @@ MATTER_LABEL_NAME = "Matter Homes"
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up TeleTask hub from config entry."""
     try:
-        hub = TeletaskHub(hass, entry.data)
+        # Create hub in executor to avoid blocking I/O in event loop
+        hub = await hass.async_add_executor_job(TeletaskHub, hass, entry.data)
         await hass.async_add_executor_job(hub.start)
     except FileNotFoundError as e:
         _LOGGER.error("TeleTask config file not found: %s", e)

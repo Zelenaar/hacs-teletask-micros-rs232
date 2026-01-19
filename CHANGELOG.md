@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.1] - 2026-01-20
+
+### Fixed
+- **Blocking I/O warnings in event loop**: Eliminated warnings about blocking file operations
+  - Moved TeletaskHub instantiation to executor job in async_setup_entry
+  - Config file reads (config.json, devices.json) now happen in thread pool
+  - Prevents "Detected blocking call to open" warnings in Home Assistant logs
+  - **Impact:** Cleaner logs, better async compliance, no functional change
+
 ## [1.9.0] - 2026-01-20
 
 ### CRITICAL FIXES - Test Card Now Fully Functional
