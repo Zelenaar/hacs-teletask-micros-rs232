@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.4] - 2026-01-20
+
+### Fixed
+- **CRITICAL: unique_id format mismatch for relay switches**: Matter label assignment now works correctly
+  - Changed switch.py unique_id from `relay_{num}` to `relay_switch_{num}`
+  - Now matches the format expected by Matter label parser in __init__.py
+  - Relay switches with `"matter": true` now properly receive the `matterhomes` label
+
+### Improved
+- **Error handling in Matter label assignment**: Added try/except around registry updates
+  - Prevents one failed entity from breaking the entire label assignment process
+  - Logs warnings for individual failures instead of crashing
+
+- **Cross-platform config flow**: Improved default serial port selection
+  - Windows: COM6
+  - Linux: /dev/ttyUSB0
+  - macOS: /dev/tty.usbserial
+  - Added duplicate configuration prevention
+  - Added proper type hints (FlowResult)
+  - Added unique_id check to prevent multiple TeleTask integrations
+
 ## [1.8.3] - 2026-01-20
 
 ### Fixed

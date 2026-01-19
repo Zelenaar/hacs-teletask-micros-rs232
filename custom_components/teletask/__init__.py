@@ -114,27 +114,30 @@ async def _async_assign_matter_labels(
     entities_labeled = 0
 
     for entity_entry in er.async_entries_for_config_entry(entity_registry, entry.entry_id):
-        # Check if this entity should have the matter label
-        should_label = _should_have_matter_label(entity_entry.unique_id, matter_devices)
+        try:
+            # Check if this entity should have the matter label
+            should_label = _should_have_matter_label(entity_entry.unique_id, matter_devices)
 
-        current_labels = set(entity_entry.labels or [])
-        has_label = MATTER_LABEL_ID in current_labels
+            current_labels = set(entity_entry.labels or [])
+            has_label = MATTER_LABEL_ID in current_labels
 
-        if should_label and not has_label:
-            # Add the label
-            entity_registry.async_update_entity(
-                entity_entry.entity_id,
-                labels=current_labels | {MATTER_LABEL_ID}
-            )
-            entities_labeled += 1
-            _LOGGER.debug("Added '%s' label to %s", MATTER_LABEL_ID, entity_entry.entity_id)
-        elif not should_label and has_label:
-            # Remove the label if matter was disabled
-            entity_registry.async_update_entity(
-                entity_entry.entity_id,
-                labels=current_labels - {MATTER_LABEL_ID}
-            )
-            _LOGGER.debug("Removed '%s' label from %s", MATTER_LABEL_ID, entity_entry.entity_id)
+            if should_label and not has_label:
+                # Add the label
+                entity_registry.async_update_entity(
+                    entity_entry.entity_id,
+                    labels=current_labels | {MATTER_LABEL_ID}
+                )
+                entities_labeled += 1
+                _LOGGER.debug("Added '%s' label to %s", MATTER_LABEL_ID, entity_entry.entity_id)
+            elif not should_label and has_label:
+                # Remove the label if matter was disabled
+                entity_registry.async_update_entity(
+                    entity_entry.entity_id,
+                    labels=current_labels - {MATTER_LABEL_ID}
+                )
+                _LOGGER.debug("Removed '%s' label from %s", MATTER_LABEL_ID, entity_entry.entity_id)
+        except Exception as e:
+            _LOGGER.warning("Failed to update labels for %s: %s", entity_entry.entity_id, e)
 
     if entities_labeled:
         _LOGGER.info("Assigned '%s' label to %d entities", MATTER_LABEL_ID, entities_labeled)

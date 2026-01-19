@@ -58,7 +58,7 @@ class TeletaskRelay(TeletaskEntity, SwitchEntity):
         if device.room:
             self._attr_suggested_area = device.room
 
-        self._attr_unique_id = f"teletask_{entry_id}_relay_{device.num}"
+        self._attr_unique_id = f"teletask_{entry_id}_relay_switch_{device.num}"
 
     @property
     def is_on(self) -> bool:
