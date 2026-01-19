@@ -90,3 +90,10 @@ home-assistant_v2.db-wal
 config/
 secrets.yaml
 *.local.json
+
+# Node.js / Frontend Build
+node_modules/
+dist/
+*.tsbuildinfo
+package-lock.json
+.rollup.cache/

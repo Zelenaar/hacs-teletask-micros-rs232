@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.0] - 2026-01-19
+
+### Added
+- **TeleTask Test Card**: New custom Lovelace card for device testing and event monitoring
+  - **Device Control Tab**: Test relays, dimmers, moods, and flags directly from the dashboard
+    - Relay/Flag controls: ON, OFF, TOGGLE, Get Status
+    - Dimmer controls: Brightness slider (0-255), Set, Toggle, Get Status
+    - Mood controls: Type selector (LOCAL/GENERAL/TIMED), ON, OFF, TOGGLE, Get Status
+    - Auto-detection of all configured TeleTask devices
+  - **Event Monitor Tab**: Real-time log of TeleTask communication events
+    - Live event display with timestamp, type, function, device number, and state
+    - Auto-scroll to latest events (toggleable)
+    - Clear log functionality
+    - Connection status indicator
+  - Modern responsive design matching Home Assistant styling
+  - Automatic registration via manifest.json (no manual resource loading needed)
+  - TypeScript implementation using Lit framework
+
+### Changed
+- Updated manifest.json to v1.8.0 with frontend resource registration
+- Updated __init__.py to register static path for card resources
+- Added frontend build configuration (package.json, rollup, tsconfig)
+
+### Developer Notes
+- Frontend source in `src/` directory (TypeScript/Lit)
+- Build with `npm run build` to generate `dist/teletask-test-card.js`
+- Copy compiled JS to `custom_components/teletask/static/` for distribution
+
 ## [1.7.0] - 2026-01-19
 
 ### Added

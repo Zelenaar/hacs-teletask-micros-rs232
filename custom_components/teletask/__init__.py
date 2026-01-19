@@ -1,13 +1,17 @@
 
 #################################################################################################
 # File:    __init__.py
-# Version: 1.3 - Added automatic matterhomes label for Matter-enabled entities
+# Version: 1.8 - Added TeleTask Test Card frontend resource
 #
 # TeleTask MICROS custom component for Home Assistant
+#
+# Frontend card (teletask-test-card.js) is registered via manifest.json and served by HACS
 #################################################################################################
 
 import logging
 import serial
+
+import os
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -47,6 +51,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = hub
 
+    # Register frontend resources (static path for Lovelace card)
+    # Note: The card is primarily loaded via manifest.json frontend section
+    # This provides an alternative access path for development/debugging
+    _register_frontend_resources(hass)
+
     # Load platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
@@ -54,6 +63,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await _async_assign_matter_labels(hass, entry, hub)
 
     return True
+
+
+def _register_frontend_resources(hass: HomeAssistant) -> None:
+    """Register static path for TeleTask Test Card."""
+    static_path = os.path.join(os.path.dirname(__file__), "static")
+
+    if os.path.exists(static_path):
+        hass.http.register_static_path(
+            "/hacsfiles/hacs-teletask-micros-rs232",
+            static_path,
+            cache_headers=False
+        )
+        _LOGGER.info("Registered TeleTask Test Card static resources at %s", static_path)
+    else:
+        _LOGGER.debug("Static directory not found at %s (card may not be built yet)", static_path)
 
 
 async def _async_assign_matter_labels(

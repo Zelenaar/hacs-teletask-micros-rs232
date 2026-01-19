@@ -231,6 +231,80 @@ The [Matterbridge add-on](https://github.com/Luligu/matterbridge-home-assistant-
 2. Go to **Settings** → **Devices & Services** → **Matter** → **Configure**
 3. Select entities to expose (look for the `matterhomes` label)
 
+## TeleTask Test Card
+
+This integration includes a custom Lovelace card for testing devices and monitoring TeleTask communication in real-time.
+
+### Features
+
+- **Device Control Tab**: Test relays, dimmers, moods, and flags directly from the HA dashboard
+- **Event Monitor Tab**: Real-time log of TeleTask communication events
+- Auto-detection of all configured TeleTask devices
+- Modern responsive design matching Home Assistant styling
+
+### Installation
+
+The card is automatically included with the integration. After installing via HACS:
+
+1. Reload your browser (Ctrl+F5 or Cmd+Shift+R)
+2. Add a new card to your dashboard
+3. Search for "TeleTask Test Card" in the card picker
+4. Click to add
+
+Or manually add via YAML:
+
+```yaml
+type: custom:teletask-test-card
+```
+
+### Using the Device Control Tab
+
+1. **Select Device Type**: Choose Relay, Dimmer, Mood, or Flag from the dropdown
+2. **Select Device**: Pick a specific device from the list (format: `[NUM] ROOM - NAME`)
+3. **Control the Device**:
+   - **Relays/Flags**: ON, OFF, TOGGLE buttons + Get Status
+   - **Dimmers**: Brightness slider (0-255) + Set Dimmer, Toggle, Get Status
+   - **Moods**: Type selector (LOCAL/GENERAL/TIMED) + ON, OFF, TOGGLE, Get Status
+4. **View Results**: Command results appear in the "Last Result" box
+
+### Using the Event Monitor Tab
+
+- Displays real-time TeleTask communication events (ACK, EVENT, GET replies)
+- Shows timestamp, event type, function name, device number, and state
+- **Auto-scroll**: Automatically scrolls to latest events (can be toggled off)
+- **Clear Log**: Clears all events from the display
+- **Connection Status**: Indicates if TeleTask hub is connected
+
+### Card Configuration (Optional)
+
+```yaml
+type: custom:teletask-test-card
+default_tab: devices        # or 'events'
+show_device_types:          # optional filter
+  - relay
+  - dimmer
+  - mood
+  - flag
+max_events: 100             # maximum events in log (default: 100)
+```
+
+### Troubleshooting
+
+**Card not appearing in card picker:**
+- Verify the integration is installed and Home Assistant restarted
+- Clear browser cache (Ctrl+F5)
+- Check browser console for JavaScript errors
+
+**No devices showing:**
+- Ensure devices are configured in `devices.json` with `"ha": true`
+- Verify the TeleTask integration is loaded and connected
+- Check that entities appear in **Developer Tools** → **States**
+
+**Events not appearing:**
+- Events only show when devices change state
+- Manually trigger a device (turn light on/off) to generate events
+- Check that the TeleTask hub is connected (status indicator)
+
 ## File Structure
 
 After setup, your config folder should look like:
