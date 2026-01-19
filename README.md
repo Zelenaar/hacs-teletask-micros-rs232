@@ -6,6 +6,8 @@
 
 Home Assistant custom integration for **TeleTask MICROS** home automation systems via RS232 or TCP/IP.
 
+**[Full Installation Guide](docs/INSTALLATION_GUIDE.md)** | **[Troubleshooting](#troubleshooting)**
+
 ## Features
 
 - Control TeleTask relays (as lights or switches)
