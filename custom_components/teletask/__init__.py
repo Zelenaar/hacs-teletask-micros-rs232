@@ -1,11 +1,11 @@
 
 #################################################################################################
 # File:    __init__.py
-# Version: 1.8 - Added TeleTask Test Card frontend resource
+# Version: 1.8.1 - Fixed TeleTask Test Card frontend resource registration
 #
 # TeleTask MICROS custom component for Home Assistant
 #
-# Frontend card (teletask-test-card.js) is registered via manifest.json and served by HACS
+# Frontend card (teletask-test-card.js) is registered programmatically via add_extra_js_url()
 #################################################################################################
 
 import logging
@@ -17,6 +17,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers import entity_registry as er, label_registry as lr
+from homeassistant.components.frontend import add_extra_js_url
 
 from .teletask_hub import TeletaskHub
 
@@ -66,18 +67,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 def _register_frontend_resources(hass: HomeAssistant) -> None:
-    """Register static path for TeleTask Test Card."""
+    """Register static path and JS resource for TeleTask Test Card."""
     static_path = os.path.join(os.path.dirname(__file__), "static")
 
-    if os.path.exists(static_path):
-        hass.http.register_static_path(
-            "/hacsfiles/hacs-teletask-micros-rs232",
-            static_path,
-            cache_headers=False
-        )
-        _LOGGER.info("Registered TeleTask Test Card static resources at %s", static_path)
-    else:
+    if not os.path.exists(static_path):
         _LOGGER.debug("Static directory not found at %s (card may not be built yet)", static_path)
+        return
+
+    # Register static path for serving the JS file
+    resource_path = "/teletask_static"
+    hass.http.register_static_path(
+        resource_path,
+        static_path,
+        cache_headers=False
+    )
+
+    # Register the card JS as an extra module URL
+    js_url = f"{resource_path}/teletask-test-card.js"
+    add_extra_js_url(hass, js_url)
+
+    _LOGGER.info("Registered TeleTask Test Card: %s", js_url)
 
 
 async def _async_assign_matter_labels(

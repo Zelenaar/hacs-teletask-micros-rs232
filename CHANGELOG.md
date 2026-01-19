@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.1] - 2026-01-19
+
+### Fixed
+- **Frontend resource registration**: Fixed TeleTask Test Card not appearing in card picker
+  - Changed from manifest.json `frontend` section to programmatic registration using `add_extra_js_url()`
+  - Added `frontend` dependency to manifest.json
+  - Card now properly registers and appears in Lovelace card picker
+  - Fixed static path from `/hacsfiles/...` to `/teletask_static/...`
+
 ## [1.8.0] - 2026-01-19
 
 ### Added
