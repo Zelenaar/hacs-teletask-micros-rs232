@@ -13,7 +13,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import DOMAIN
 from .entity import TeletaskEntity
-from teletask.device_config import DeviceInfo
+from .teletask.device_config import DeviceInfo
 
 # Relay types that should be exposed as lights
 LIGHT_TYPES = {"light", "lamp", "verlichting"}

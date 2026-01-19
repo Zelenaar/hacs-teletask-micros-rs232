@@ -10,12 +10,12 @@ from typing import Dict, Any, Optional, List
 
 from homeassistant.core import HomeAssistant
 
-from teletask.micros_rs232 import MicrosRS232
-from teletask.protocol import (
+from .teletask.micros_rs232 import MicrosRS232
+from .teletask.protocol import (
     FUNC_RELAY, FUNC_DIMMER, FUNC_FLAG,
     FUNC_LOCMOOD, FUNC_GENMOOD, FUNC_SENSOR
 )
-from teletask.device_config import load_device_config_safe, DeviceConfig, DeviceInfo, SensorInfo
+from .teletask.device_config import load_device_config_safe, DeviceConfig, DeviceInfo, SensorInfo
 
 _LOGGER = logging.getLogger(__name__)
 

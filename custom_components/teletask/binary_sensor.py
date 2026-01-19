@@ -16,7 +16,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import DOMAIN
 from .entity import TeletaskEntity
-from teletask.device_config import DeviceInfo
+from .teletask.device_config import DeviceInfo
 
 # Map input types to Home Assistant device classes
 INPUT_TYPE_DEVICE_CLASS = {

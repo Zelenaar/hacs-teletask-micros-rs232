@@ -15,7 +15,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import DOMAIN
 from .entity import TeletaskEntity
-from teletask.device_config import DeviceInfo
+from .teletask.device_config import DeviceInfo
 
 
 async def async_setup_entry(

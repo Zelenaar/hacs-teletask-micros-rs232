@@ -17,7 +17,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import DOMAIN
 from .entity import TeletaskEntity
-from teletask.device_config import SensorInfo
+from .teletask.device_config import SensorInfo
 
 # Map sensor types to Home Assistant device classes and units
 SENSOR_TYPE_CONFIG = {

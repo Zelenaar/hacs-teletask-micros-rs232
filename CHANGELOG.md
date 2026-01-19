@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.2] - 2026-01-19
+
+### Fixed
+- **Critical import error**: Fixed "No module named 'teletask.micros_rs232'" error
+  - Changed all absolute imports (`from teletask.xxx`) to relative imports (`from .teletask.xxx`)
+  - Fixed in: teletask_hub.py, light.py, switch.py, binary_sensor.py, button.py, number.py, sensor.py
+  - Integration now loads correctly in Home Assistant
+
 ## [1.8.1] - 2026-01-19
 
 ### Fixed
