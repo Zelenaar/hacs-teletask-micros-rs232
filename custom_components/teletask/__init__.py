@@ -55,7 +55,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Register frontend resources (static path for Lovelace card)
     # Note: The card is primarily loaded via manifest.json frontend section
     # This provides an alternative access path for development/debugging
-    _register_frontend_resources(hass)
+    await _register_frontend_resources(hass)
 
     # Load platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -66,7 +66,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-def _register_frontend_resources(hass: HomeAssistant) -> None:
+async def _register_frontend_resources(hass: HomeAssistant) -> None:
     """Register static path and JS resource for TeleTask Test Card."""
     static_path = os.path.join(os.path.dirname(__file__), "static")
 
@@ -76,10 +76,8 @@ def _register_frontend_resources(hass: HomeAssistant) -> None:
 
     # Register static path for serving the JS file
     resource_path = "/teletask_static"
-    hass.http.register_static_path(
-        resource_path,
-        static_path,
-        cache_headers=False
+    await hass.http.async_register_static_paths(
+        [{"url": resource_path, "path": static_path}]
     )
 
     # Register the card JS as an extra module URL

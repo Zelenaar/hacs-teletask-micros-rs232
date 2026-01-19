@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.8.3] - 2026-01-20
+
+### Fixed
+- **Frontend resource registration method**: Fixed AttributeError when loading integration
+  - Changed `hass.http.register_static_path()` to `await hass.http.async_register_static_paths()`
+  - Changed function to async: `async def _register_frontend_resources()`
+  - Updated method signature from singular to plural with dict list format
+  - Integration now loads successfully without errors
+
 ## [1.8.2] - 2026-01-19
 
 ### Fixed
