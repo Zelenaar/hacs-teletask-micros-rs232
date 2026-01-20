@@ -79,37 +79,28 @@ def _register_services(hass: HomeAssistant, hub: TeletaskHub) -> None:
         mood_type = call.data.get("type", "LOCAL").upper()
         state = call.data.get("state", "ON").upper()
 
-        # Map state string to value
-        state_map = {"ON": 255, "OFF": 0, "TOGGLE": -1}
-        state_value = state_map.get(state, 255)
-
-        # Execute mood command based on type
-        if mood_type == "LOCAL":
-            if state_value == -1:
-                hub.toggle_local_mood(number)
-            else:
-                hub.set_local_mood(number, state_value == 255)
-        elif mood_type == "GENERAL":
-            if state_value == -1:
-                hub.toggle_general_mood(number)
-            else:
-                hub.set_general_mood(number, state_value == 255)
+        # TeletaskHub only has trigger_mood() which sends ON
+        # For ON state, trigger the mood
+        if state == "ON":
+            hub.trigger_mood(number, mood_type)
         else:
-            _LOGGER.warning("Unknown mood type: %s", mood_type)
+            # For OFF/TOGGLE, we need to call the client directly
+            hub.client.set_mood(number, state, mood_type)
 
     def handle_set_flag(call):
         """Handle the set_flag service call."""
         number = call.data.get("number")
         state = call.data.get("state", "ON").upper()
 
-        # Map state string to value
-        state_map = {"ON": 255, "OFF": 0, "TOGGLE": -1}
-        state_value = state_map.get(state, 255)
-
-        if state_value == -1:
-            hub.toggle_flag(number)
-        else:
-            hub.set_flag(number, state_value == 255)
+        # Convert string state to boolean
+        if state == "ON":
+            hub.set_flag(number, True)
+        elif state == "OFF":
+            hub.set_flag(number, False)
+        elif state == "TOGGLE":
+            # Toggle by reading current state and flipping it
+            current = hub.get_flag(number)
+            hub.set_flag(number, not current)
 
     # Register services (check if already registered to prevent duplicates)
     if not hass.services.has_service(DOMAIN, "set_mood"):

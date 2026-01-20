@@ -18,9 +18,9 @@ export class DeviceControlTab extends LitElement {
   @property({ attribute: false }) public config!: TeletaskTestCardConfig;
 
   @state() private _selectedType: DeviceType = 'relay';
+  @state() private _selectedRoom: string = 'all';
   @state() private _selectedDevice?: TeletaskDevice;
   @state() private _dimmerValue: number = 128;
-  @state() private _moodType: MoodType = 'LOCAL';
   @state() private _result: string = '';
   @state() private _resultType: 'success' | 'error' | '' = '';
 
@@ -32,7 +32,7 @@ export class DeviceControlTab extends LitElement {
   private _getDevicesByType(type: DeviceType): TeletaskDevice[] {
     if (!this.hass) return [];
 
-    const devices: TeletaskDevice[] = [];
+    const devicesByNumber = new Map<number, TeletaskDevice>();  // Deduplicate by device number
     const entities = Object.values(this.hass.states);
 
     for (const entity of entities) {
@@ -43,6 +43,9 @@ export class DeviceControlTab extends LitElement {
       // Add null check for attributes
       if (!attrs) continue;
 
+      // Skip if no device number
+      if (!attrs.teletask_number) continue;
+
       let deviceType: DeviceType | null = null;
       let domain = entity.entity_id.split('.')[0];
 
@@ -52,12 +55,21 @@ export class DeviceControlTab extends LitElement {
           deviceType = 'relay';
         }
       } else if (type === 'dimmer') {
+        // Only show light entities for dimmers, not number entities
         if (domain === 'light' && attrs.teletask_function === 2) {
           deviceType = 'dimmer';
         }
-      } else if (type === 'mood') {
-        if (domain === 'button' && [8, 9, 10].includes(attrs.teletask_function)) {
-          deviceType = 'mood';
+      } else if (type === 'local_mood') {
+        if (domain === 'button' && attrs.teletask_function === 8) {
+          deviceType = 'local_mood';
+        }
+      } else if (type === 'general_mood') {
+        if (domain === 'button' && attrs.teletask_function === 9) {
+          deviceType = 'general_mood';
+        }
+      } else if (type === 'timed_mood') {
+        if (domain === 'button' && attrs.teletask_function === 10) {
+          deviceType = 'timed_mood';
         }
       } else if (type === 'flag') {
         if (domain === 'binary_sensor' && attrs.teletask_function === 15) {
@@ -66,18 +78,59 @@ export class DeviceControlTab extends LitElement {
       }
 
       if (deviceType) {
-        devices.push({
+        const deviceNum = attrs.teletask_number;
+        const device: TeletaskDevice = {
           entity_id: entity.entity_id,
-          number: attrs.teletask_number || 0,
+          number: deviceNum,
           room: attrs.room || 'Unknown',
           name: attrs.friendly_name || entity.entity_id,
           type: deviceType,
           domain: domain,
-        });
+        };
+
+        // Deduplicate by device number - prefer light over switch for relays
+        if (!devicesByNumber.has(deviceNum)) {
+          devicesByNumber.set(deviceNum, device);
+        } else {
+          const existing = devicesByNumber.get(deviceNum)!;
+          // Prefer light domain over switch for relays
+          if (type === 'relay' && domain === 'light' && existing.domain === 'switch') {
+            devicesByNumber.set(deviceNum, device);
+          }
+        }
       }
     }
 
-    return devices.sort((a, b) => a.number - b.number);
+    return Array.from(devicesByNumber.values()).sort((a, b) => a.number - b.number);
+  }
+
+  /**
+   * Get unique rooms from devices
+   */
+  private _getRooms(): string[] {
+    const devices = this._getDevicesByType(this._selectedType);
+    const rooms = new Set<string>();
+
+    for (const device of devices) {
+      if (device.room && device.room !== 'Unknown') {
+        rooms.add(device.room);
+      }
+    }
+
+    return Array.from(rooms).sort();
+  }
+
+  /**
+   * Get filtered devices by room selection
+   */
+  private _getFilteredDevices(): TeletaskDevice[] {
+    const devices = this._getDevicesByType(this._selectedType);
+
+    if (this._selectedRoom === 'all') {
+      return devices;
+    }
+
+    return devices.filter(device => device.room === this._selectedRoom);
   }
 
   /**
@@ -86,7 +139,19 @@ export class DeviceControlTab extends LitElement {
   private _handleTypeChange(e: Event): void {
     const select = e.target as HTMLSelectElement;
     this._selectedType = select.value as DeviceType;
+    this._selectedRoom = 'all';  // Reset room filter
     this._selectedDevice = undefined;
+    this._result = '';
+    this._resultType = '';
+  }
+
+  /**
+   * Handle room filter selection
+   */
+  private _handleRoomChange(e: Event): void {
+    const select = e.target as HTMLSelectElement;
+    this._selectedRoom = select.value;
+    this._selectedDevice = undefined;  // Reset device selection
     this._result = '';
     this._resultType = '';
   }
@@ -96,7 +161,7 @@ export class DeviceControlTab extends LitElement {
    */
   private _handleDeviceChange(e: Event): void {
     const select = e.target as HTMLSelectElement;
-    const devices = this._getDevicesByType(this._selectedType);
+    const devices = this._getFilteredDevices();
     this._selectedDevice = devices.find((d) => d.entity_id === select.value);
     this._result = '';
     this._resultType = '';
@@ -159,16 +224,24 @@ export class DeviceControlTab extends LitElement {
     if (!this._selectedDevice) return;
 
     try {
+      // Determine mood type from device type
+      const moodTypeMap: Record<string, MoodType> = {
+        local_mood: 'LOCAL',
+        general_mood: 'GENERAL',
+        timed_mood: 'TIMED',
+      };
+      const moodType = moodTypeMap[this._selectedType] || 'LOCAL';
+
       // Moods use the teletask.set_mood service with string state values
       const state = action === 'on' ? 'ON' : action === 'off' ? 'OFF' : 'TOGGLE';
 
       await this.hass.callService('teletask', 'set_mood', {
         number: this._selectedDevice.number,
-        type: this._moodType,  // Fixed: was 'mood_type', should be 'type'
-        state: state,  // Fixed: use strings 'ON'/'OFF'/'TOGGLE', not numbers
+        type: moodType,
+        state: state,
       });
 
-      this._result = `${this._selectedDevice.name} (${this._moodType}): ${action.toUpperCase()}`;
+      this._result = `${this._selectedDevice.name} (${moodType}): ${action.toUpperCase()}`;
       this._resultType = 'success';
     } catch (err) {
       this._result = `Error: ${err}`;
@@ -204,10 +277,25 @@ export class DeviceControlTab extends LitElement {
   }
 
   /**
+   * Get friendly display name for device type
+   */
+  private _getTypeDisplayName(type: DeviceType): string {
+    const typeNames: Record<DeviceType, string> = {
+      relay: 'Relay',
+      dimmer: 'Dimmer',
+      local_mood: 'Local Mood',
+      general_mood: 'General Mood',
+      timed_mood: 'Timed Mood',
+      flag: 'Flag',
+    };
+    return typeNames[type] || type;
+  }
+
+  /**
    * Render device type selector
    */
   private _renderTypeSelector(): TemplateResult {
-    const types = this.config.show_device_types || ['relay', 'dimmer', 'mood', 'flag'];
+    const types = this.config.show_device_types || ['relay', 'dimmer', 'local_mood', 'general_mood', 'timed_mood', 'flag'];
 
     return html`
       <div class="form-group">
@@ -216,7 +304,34 @@ export class DeviceControlTab extends LitElement {
           ${types.map(
             (type) => html`
               <option value=${type} ?selected=${type === this._selectedType}>
-                ${type.charAt(0).toUpperCase() + type.slice(1)}
+                ${this._getTypeDisplayName(type)}
+              </option>
+            `
+          )}
+        </select>
+      </div>
+    `;
+  }
+
+  /**
+   * Render room filter selector
+   */
+  private _renderRoomFilter(): TemplateResult {
+    const rooms = this._getRooms();
+
+    if (rooms.length === 0) {
+      return html``;
+    }
+
+    return html`
+      <div class="form-group">
+        <label>Filter by Room:</label>
+        <select @change=${this._handleRoomChange} .value=${this._selectedRoom}>
+          <option value="all" ?selected=${this._selectedRoom === 'all'}>All Rooms</option>
+          ${rooms.map(
+            (room) => html`
+              <option value=${room} ?selected=${this._selectedRoom === room}>
+                ${room}
               </option>
             `
           )}
@@ -229,17 +344,30 @@ export class DeviceControlTab extends LitElement {
    * Render device selector
    */
   private _renderDeviceSelector(): TemplateResult {
-    const devices = this._getDevicesByType(this._selectedType);
+    const devices = this._getFilteredDevices();
 
     if (devices.length === 0) {
-      return html`
-        <div class="form-group">
-          <label>Select Device:</label>
-          <div style="padding: 12px; color: var(--tt-secondary-text);">
-            No ${this._selectedType}s configured in TeleTask integration.
+      const allDevices = this._getDevicesByType(this._selectedType);
+
+      if (allDevices.length === 0) {
+        return html`
+          <div class="form-group">
+            <label>Select Device:</label>
+            <div style="padding: 12px; color: var(--tt-secondary-text);">
+              No ${this._getTypeDisplayName(this._selectedType)} devices configured in TeleTask integration.
+            </div>
           </div>
-        </div>
-      `;
+        `;
+      } else {
+        return html`
+          <div class="form-group">
+            <label>Select Device:</label>
+            <div style="padding: 12px; color: var(--tt-secondary-text);">
+              No ${this._getTypeDisplayName(this._selectedType)} devices in selected room.
+            </div>
+          </div>
+        `;
+      }
     }
 
     return html`
@@ -311,23 +439,10 @@ export class DeviceControlTab extends LitElement {
       `;
     }
 
-    // Mood controls (Type selector + ON/OFF/TOGGLE)
-    if (this._selectedType === 'mood') {
+    // Mood controls (ON/OFF/TOGGLE for all mood types)
+    if (this._selectedType === 'local_mood' || this._selectedType === 'general_mood' || this._selectedType === 'timed_mood') {
       return html`
         <div class="control-panel">
-          <div class="form-group">
-            <label>Mood Type:</label>
-            <select
-              @change=${(e: Event) => {
-                this._moodType = (e.target as HTMLSelectElement).value as MoodType;
-              }}
-              .value=${this._moodType}
-            >
-              <option value="LOCAL">Local Mood</option>
-              <option value="GENERAL">General Mood</option>
-              <option value="TIMED">Timed Mood</option>
-            </select>
-          </div>
           <div class="button-group">
             <button @click=${() => this._handleMoodAction('on')}>ON</button>
             <button @click=${() => this._handleMoodAction('off')} class="secondary">OFF</button>
@@ -360,7 +475,10 @@ export class DeviceControlTab extends LitElement {
   protected render(): TemplateResult {
     return html`
       <div class="device-control">
-        ${this._renderTypeSelector()} ${this._renderDeviceSelector()} ${this._renderControlPanel()}
+        ${this._renderTypeSelector()}
+        ${this._renderRoomFilter()}
+        ${this._renderDeviceSelector()}
+        ${this._renderControlPanel()}
 
         <div style="margin-top: var(--tt-spacing);">
           <label>Last Result:</label>

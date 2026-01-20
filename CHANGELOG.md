@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.7] - 2026-01-20
+
+### Added
+- **Room filter dropdown in test card**: Filter devices by room for easier testing
+  - New "Filter by Room" dropdown appears after device type selector
+  - Shows "All Rooms" option plus all unique rooms from configured devices
+  - Dynamically updates available rooms when device type changes
+  - Resets device selection when room filter changes
+  - **Impact:** Easier to find and test devices in large installations
+
+### Fixed
+- **Duplicate devices in dropdown**: Each device now appears only once
+  - Bug: All devices were appearing 3x in the device dropdown
+  - Root cause: Multiple entities for same device (e.g., light.relay_5 + switch.relay_5)
+  - Solution: Deduplicate by device number instead of entity_id
+  - For relays: Prefer light domain over switch when both exist
+  - **Impact:** Clean device list with no duplicates
+
+**Test Card Version:** v1.9.7 (updated from v1.9.6)
+
+## [1.9.6] - 2026-01-20
+
+### Fixed
+- **Mood controls now working correctly**: Fixed service handler to use actual TeletaskHub methods
+  - Error: "'TeletaskHub' object has no attribute 'set_local_mood'"
+  - Changed service handler to use hub.trigger_mood() and hub.client.set_mood()
+  - Services now call correct backend methods
+  - **Impact:** Mood controls (ON/OFF/TOGGLE) now function properly
+
+### Changed
+- **Test card UI redesign for moods**: Separated mood types into distinct device types
+  - Old: Single "Mood" type with separate mood type selector (LOCAL/GENERAL/TIMED)
+  - New: Three separate device types: "Local Mood", "General Mood", "Timed Mood"
+  - Removed mood type selector dropdown from control panel
+  - Each mood type filters devices by teletask_function (8=LOCAL, 9=GENERAL, 10=TIMED)
+  - **Impact:** Cleaner UI, mood type selection now part of device type dropdown
+
+**Test Card Version:** v1.9.6 (updated from v1.9.4)
+
 ## [1.9.5] - 2026-01-20
 
 ### Fixed

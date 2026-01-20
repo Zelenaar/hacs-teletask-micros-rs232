@@ -31,7 +31,7 @@ export class TeletaskTestCard extends LitElement {
     this._config = {
       type: 'custom:teletask-test-card',
       default_tab: config.default_tab || 'devices',
-      show_device_types: config.show_device_types || ['relay', 'dimmer', 'mood', 'flag'],
+      show_device_types: config.show_device_types || ['relay', 'dimmer', 'local_mood', 'general_mood', 'timed_mood', 'flag'],
       max_events: config.max_events || 100,
       ...config,
     };
@@ -125,7 +125,7 @@ export class TeletaskTestCard extends LitElement {
 });
 
 console.info(
-  '%c TELETASK-TEST-CARD %c v1.9.4 ',
+  '%c TELETASK-TEST-CARD %c v1.9.7 ',
   'background-color: #03a9f4; color: #fff; font-weight: bold;',
   'background-color: #333; color: #fff; font-weight: bold;'
 );

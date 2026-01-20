@@ -35,7 +35,7 @@ export interface TeletaskTestCardConfig {
 }
 
 // Device types
-export type DeviceType = 'relay' | 'dimmer' | 'mood' | 'flag';
+export type DeviceType = 'relay' | 'dimmer' | 'local_mood' | 'general_mood' | 'timed_mood' | 'flag';
 
 export interface TeletaskDevice {
   entity_id: string;
