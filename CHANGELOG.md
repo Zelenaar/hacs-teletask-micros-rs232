@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.11] - 2026-01-20
+
+### Fixed
+- **Synced standalone driver with HA integration**: Fixed TIMED mood support in GUI and CLI
+  - Bug: Standalone `teletask/micros_rs232.py` still had old buggy code for mood handling
+  - Root cause: v1.9.9 only fixed HA integration, forgot to sync standalone driver
+  - Solution: Applied same TIMED mood fix to standalone driver (V06.1 → V06.2)
+  - Both versions now use explicit LOCAL/TIMED/GENERAL function code handling
+  - **Impact:** TIMED moods now work correctly in GUI and CLI
+
+### Changed
+- **GUI: Added TIMED mood support**
+  - Updated mood type combobox from ["LOCAL", "GENERAL"] to ["LOCAL", "GENERAL", "TIMED"]
+  - GUI version: V06.9 → V06.10
+  - **Impact:** Users can now test TIMED moods from GUI
+
+- **CLI: Added TIMED mood support**
+  - Updated mood command to accept TIMED type
+  - Updated help message: `mood <num> on [local|general|timed]`
+  - Updated validation to accept LOCAL/GENERAL/TIMED
+  - CLI version: 1.0 → 1.1
+  - **Impact:** Users can now test TIMED moods from CLI
+
+### Technical Details
+- **Driver V06.2 changes:**
+  - Replaced: `func = FUNC_LOCMOOD if mood_type == "LOCAL" else FUNC_GENMOOD`
+  - With: Explicit if/elif for LOCAL(8), TIMED(9), GENERAL(10)
+  - Added ValueError for invalid mood_type
+
+**All Components Now Synced:**
+- ✅ Home Assistant integration (v1.9.11)
+- ✅ Standalone driver (V06.2)
+- ✅ GUI (V06.10)
+- ✅ CLI (1.1)
+
 ## [1.9.10] - 2026-01-20
 
 ### Fixed

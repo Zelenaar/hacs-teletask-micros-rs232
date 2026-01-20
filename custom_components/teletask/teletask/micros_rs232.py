@@ -1,7 +1,7 @@
 
 #################################################################################################
 # File:    micros_rs232.py
-# Version: V06.1 (Event logging edition)
+# Version: V06.2 (Fixed TIMED mood support)
 #
 # Project: PHAeleTaskV1
 # Author:  Peter Spriet + AI assistant
