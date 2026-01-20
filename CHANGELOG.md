@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.13] - 2026-01-20
+
+### Fixed
+- **CRITICAL: Threading violation in event firing**: Fixed Home Assistant crash risk
+  - Warning: "Detected that custom integration 'teletask' calls hass.bus.async_fire from a thread"
+  - Location: teletask_hub.py:177 in `_log_to_ha()` callback
+  - Root cause: MicrosRS232 receive thread calls `_log_to_ha()`, which directly called `async_fire()`
+  - Solution: Use `hass.loop.call_soon_threadsafe()` to schedule event on event loop
+  - **Impact:** Prevents potential HA crashes and data corruption
+
+### Technical Details
+The MicrosRS232 driver runs a dedicated receive thread that monitors the serial port. When it receives data, it calls back to `_log_to_ha()` to notify Home Assistant. However, this callback happens on the worker thread, not the event loop thread.
+
+**Old (UNSAFE):**
+```python
+self.hass.bus.async_fire("teletask_state_updated", {...})  # Called from worker thread!
+```
+
+**New (SAFE):**
+```python
+self.hass.loop.call_soon_threadsafe(
+    self.hass.bus.async_fire,
+    "teletask_state_updated",
+    {...}
+)
+```
+
+This ensures the event is fired on the event loop thread, preventing race conditions and crashes.
+
+**Hub Version:** 1.4 → 1.5
+
 ## [1.9.12] - 2026-01-20
 
 ### Fixed

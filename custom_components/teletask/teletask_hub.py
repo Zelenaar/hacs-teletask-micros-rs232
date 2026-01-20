@@ -1,7 +1,7 @@
 
 #################################################################################################
 # File:    teletask_hub.py
-# Version: 1.4 - Added get_matter_enabled_devices() for label assignment
+# Version: 1.5 - Fixed threading issue with async_fire from receive thread
 #################################################################################################
 
 import logging
@@ -173,12 +173,17 @@ class TeletaskHub:
                 # Sensor values are typically raw ADC or scaled values
                 self.sensor_state[num] = float(st)
 
-            # Schedule HA entity updates
-            self.hass.bus.async_fire("teletask_state_updated", {
-                "func": func,
-                "num": num,
-                "state": st
-            })
+            # Schedule HA entity updates (thread-safe)
+            # _log_to_ha is called from MicrosRS232 receive thread, so we must use call_soon_threadsafe
+            self.hass.loop.call_soon_threadsafe(
+                self.hass.bus.async_fire,
+                "teletask_state_updated",
+                {
+                    "func": func,
+                    "num": num,
+                    "state": st
+                }
+            )
 
     # ----------------------------------------------------------------------------------------------
     # Lifecycle
