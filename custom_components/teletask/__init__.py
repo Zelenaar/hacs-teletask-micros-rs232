@@ -111,10 +111,14 @@ def _register_services(hass: HomeAssistant, hub: TeletaskHub) -> None:
         else:
             hub.set_flag(number, state_value == 255)
 
-    # Register services
-    hass.services.register(DOMAIN, "set_mood", handle_set_mood)
-    hass.services.register(DOMAIN, "set_flag", handle_set_flag)
-    _LOGGER.info("Registered TeleTask services: set_mood, set_flag")
+    # Register services (check if already registered to prevent duplicates)
+    if not hass.services.has_service(DOMAIN, "set_mood"):
+        hass.services.async_register(DOMAIN, "set_mood", handle_set_mood)
+        _LOGGER.info("Registered service: teletask.set_mood")
+
+    if not hass.services.has_service(DOMAIN, "set_flag"):
+        hass.services.async_register(DOMAIN, "set_flag", handle_set_flag)
+        _LOGGER.info("Registered service: teletask.set_flag")
 
 
 def _register_frontend_resources(hass: HomeAssistant) -> None:

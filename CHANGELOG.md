@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.4] - 2026-01-20
+
+### Fixed
+- **Service registration async error**: Fixed "Cannot be called from within the event loop"
+  - Error: "RuntimeError: Cannot be called from within the event loop" in _register_services
+  - Changed `hass.services.register()` to `hass.services.async_register()`
+  - Added `has_service()` check to prevent duplicate registration
+  - Services now register correctly from async context
+  - **Impact:** Integration loads successfully, services work
+
 ## [1.9.3] - 2026-01-20
 
 ### Fixed
