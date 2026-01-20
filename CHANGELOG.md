@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.12] - 2026-01-20
+
+### Fixed
+- **CRITICAL: v1.9.11 missing rebuilt frontend**: Frontend card was not rebuilt/included
+  - Bug: v1.9.11 only updated backend files, card still running v1.9.8 code
+  - Root cause: Forgot to rebuild and include dist/teletask-test-card.js in commit
+  - Solution: Rebuilt frontend with fixed configuration validation logic
+  - Card now properly validates and migrates device types
+  - **Impact:** Configuration error fixed, card loads correctly
+
+**Test Card Version:** v1.9.12 (rebuilt and included)
+
+**Files Included in v1.9.12:**
+- ✅ custom_components/teletask/static/teletask-test-card.js (REBUILT)
+- ✅ src/teletask-test-card.ts (version v1.9.12)
+- ✅ custom_components/teletask/manifest.json (v1.9.12)
+- ✅ CHANGELOG.md
+
 ## [1.9.11] - 2026-01-20
 
 ### Fixed
