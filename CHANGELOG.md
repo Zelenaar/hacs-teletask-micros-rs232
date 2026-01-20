@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.3] - 2026-01-20
+
+### Fixed
+- **Duplicate static route registration error**: Prevented duplicate registration on reload
+  - Error: "ValueError: Duplicate 'teletask_card_static', already handled by..."
+  - Added check to see if route already exists before registering
+  - Prevents error when integration is reloaded or HA restarts
+  - **Impact:** Integration now loads successfully on reload/restart without errors
+
 ## [1.9.2] - 2026-01-20
 
 ### Fixed

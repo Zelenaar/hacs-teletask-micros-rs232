@@ -130,14 +130,25 @@ def _register_frontend_resources(hass: HomeAssistant) -> None:
     # Register static path using the app directly
     from aiohttp import web
 
-    # Add static route to serve the card file
-    hass.http.app.router.add_static(
-        "/teletask_card",
-        static_dir,
-        name="teletask_card_static"
-    )
+    # Check if route is already registered (prevents duplicate on reload)
+    route_name = "teletask_card_static"
+    route_exists = False
+    for resource in hass.http.app.router.resources():
+        if hasattr(resource, 'name') and resource.name == route_name:
+            route_exists = True
+            _LOGGER.debug("TeleTask card static route already registered, skipping")
+            break
 
-    # Register the card JS as an extra module URL
+    # Only add route if it doesn't exist
+    if not route_exists:
+        hass.http.app.router.add_static(
+            "/teletask_card",
+            static_dir,
+            name=route_name
+        )
+        _LOGGER.info("Registered TeleTask Test Card static route: /teletask_card")
+
+    # Register the card JS as an extra module URL (idempotent, can be called multiple times)
     js_url = "/teletask_card/teletask-test-card.js"
     add_extra_js_url(hass, js_url)
 
