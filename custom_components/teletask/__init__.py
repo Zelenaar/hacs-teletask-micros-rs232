@@ -79,6 +79,8 @@ def _register_services(hass: HomeAssistant, hub: TeletaskHub) -> None:
         mood_type = call.data.get("type", "LOCAL").upper()
         state = call.data.get("state", "ON").upper()
 
+        _LOGGER.info("set_mood called: number=%s, type=%s, state=%s", number, mood_type, state)
+
         # TeletaskHub only has trigger_mood() which sends ON
         # For ON state, trigger the mood
         if state == "ON":

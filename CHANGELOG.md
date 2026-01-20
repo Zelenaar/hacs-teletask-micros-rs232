@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.9] - 2026-01-20
+
+### Fixed
+- **CRITICAL: Timed moods now work correctly**: Fixed incorrect function code for timed moods
+  - Bug: Timed moods were sent with FUNC_GENMOOD (10) instead of FUNC_TIMEDMOOD (9)
+  - Root cause: set_mood() only checked LOCAL vs default to GENERAL, missing TIMED case
+  - Solution: Added explicit handling for all three mood types (LOCAL=8, TIMED=9, GENERAL=10)
+  - **Impact:** Timed moods now trigger correctly on TeleTask hardware
+
+### Added
+- **Mood service debugging**: Added logging to set_mood service handler
+  - Logs: "set_mood called: number=X, type=Y, state=Z"
+  - Helps diagnose mood control issues in Home Assistant logs
+  - **Impact:** Easier troubleshooting when moods don't respond
+
 ## [1.9.8] - 2026-01-20
 
 ### Fixed

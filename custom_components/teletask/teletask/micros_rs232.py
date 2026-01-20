@@ -689,13 +689,22 @@ class MicrosRS232:
         Args:
             num: Mood number.
             state: One of 'ON', 'OFF', or 'TOGGLE'.
-            mood_type: 'LOCAL' or 'GENERAL'.
+            mood_type: 'LOCAL', 'GENERAL', or 'TIMED'.
 
         Raises:
-            ValueError: If state is not valid.
+            ValueError: If state or mood_type is not valid.
             RuntimeError: If the SET command was not confirmed.
         """
-        func = FUNC_LOCMOOD if mood_type.upper() == "LOCAL" else FUNC_GENMOOD
+        mood_upper = mood_type.upper()
+        if mood_upper == "LOCAL":
+            func = FUNC_LOCMOOD
+        elif mood_upper == "TIMED":
+            func = FUNC_TIMEDMOOD
+        elif mood_upper == "GENERAL":
+            func = FUNC_GENMOOD
+        else:
+            raise ValueError(f"mood_type must be LOCAL, TIMED, or GENERAL, got: {mood_type}")
+
         s = state.upper()
 
         if s == "ON":
