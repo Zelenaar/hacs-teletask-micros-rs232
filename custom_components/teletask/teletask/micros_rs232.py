@@ -1,7 +1,7 @@
 
 #################################################################################################
 # File:    micros_rs232.py
-# Version: V06.2 (Fixed TIMED mood support)
+# Version: V06.3 (Fixed mood confirmation - moods are trigger actions)
 #
 # Project: PHAeleTaskV1
 # Author:  Peter Spriet + AI assistant
@@ -686,6 +686,11 @@ class MicrosRS232:
         """
         Set a mood to the specified state.
 
+        Moods are trigger actions, not stateful devices, so we use simpler confirmation:
+        - Send SET command
+        - Wait for ACK (optional, indicates command received)
+        - Don't wait for EVENT or GET (moods don't have persistent state to confirm)
+
         Args:
             num: Mood number.
             state: One of 'ON', 'OFF', or 'TOGGLE'.
@@ -693,7 +698,6 @@ class MicrosRS232:
 
         Raises:
             ValueError: If state or mood_type is not valid.
-            RuntimeError: If the SET command was not confirmed.
         """
         mood_upper = mood_type.upper()
         if mood_upper == "LOCAL":
@@ -706,18 +710,25 @@ class MicrosRS232:
             raise ValueError(f"mood_type must be LOCAL, TIMED, or GENERAL, got: {mood_type}")
 
         s = state.upper()
-
-        if s == "ON":
-            ok = self._set_with_confirm(func, num, STATE_ON)
-        elif s == "OFF":
-            ok = self._set_with_confirm(func, num, STATE_OFF)
-        elif s == "TOGGLE":
-            ok = self._set_with_confirm(func, num, STATE_ON, toggle=True)
-        else:
+        if s not in ("ON", "OFF", "TOGGLE"):
             raise ValueError("state must be ON, OFF or TOGGLE")
 
-        if not ok:
-            raise RuntimeError("Mood SET not confirmed.")
+        # For TOGGLE, we just send ON (moods don't have queryable state to toggle from)
+        target = STATE_ON if s in ("ON", "TOGGLE") else STATE_OFF
+
+        # Send SET command (moods are fire-and-forget triggers)
+        self._log(f"[INFO] Mood SET func={func} num={num} state={target}")
+        frame = self._compose_frame(CMD_SET, bytes([func, num, target]))
+        self._send_frame(frame)
+
+        # Wait briefly for ACK (optional, just to verify command was received)
+        ack_received = self._wait_ack(200)
+        if ack_received:
+            self._log("[OK] Mood triggered (ACK received)")
+        else:
+            self._log("[INFO] Mood triggered (no ACK, but command sent)")
+
+        # Success - moods are trigger actions, we don't wait for state confirmation
 
     #################################################################################################
     # PUBLIC: Flags

@@ -2,6 +2,59 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.10.0] - 2026-01-20
+
+### Fixed
+- **CRITICAL: Moods now work correctly**: Fixed "Mood SET not confirmed" error
+  - Error: `RuntimeError: Mood SET not confirmed` when activating local/general/timed moods
+  - Root cause: Moods are **trigger actions**, not stateful devices like relays/dimmers
+  - Old code used `_set_with_confirm()` which waits for EVENT/GET state confirmation
+  - TeleTask MICROS doesn't send EVENT for moods (they're triggers, not states)
+  - TeleTask MICROS doesn't respond to GET for moods (no persistent state to query)
+  - **Solution:** Rewrote `set_mood()` to treat moods as trigger actions
+  - **Impact:** Local/General/Timed moods now activate correctly
+
+### Technical Details
+
+**What are Moods?**
+Moods are **trigger actions** that execute pre-programmed scenes. Unlike relays (which have ON/OFF state), moods don't have persistent state - they just trigger an action and complete.
+
+**Old (BROKEN) Logic:**
+```python
+def set_mood():
+    ok = self._set_with_confirm(func, num, STATE_ON)  # Wait for EVENT/GET
+    if not ok:
+        raise RuntimeError("Mood SET not confirmed.")  # Always failed!
+```
+
+The confirmation logic was designed for stateful devices:
+1. Send SET command
+2. Wait for EVENT with new state
+3. Fallback: GET the state to confirm
+4. Retry if no confirmation
+
+This doesn't work for moods because they don't emit EVENTs or respond to GET.
+
+**New (WORKING) Logic:**
+```python
+def set_mood():
+    # Send SET command (fire-and-forget for trigger actions)
+    frame = self._compose_frame(CMD_SET, bytes([func, num, target]))
+    self._send_frame(frame)
+
+    # Wait briefly for ACK (optional, just confirms command received)
+    ack_received = self._wait_ack(200)
+
+    # Success - moods don't have state to confirm
+```
+
+Moods are now treated correctly as trigger actions:
+- Send the command
+- Optionally wait for ACK (command received confirmation)
+- Return success immediately (don't wait for state that doesn't exist)
+
+**Driver Version:** V06.2 → V06.3 (both HA and standalone)
+
 ## [1.9.13] - 2026-01-20
 
 ### Fixed
