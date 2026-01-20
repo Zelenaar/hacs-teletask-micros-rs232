@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.8] - 2026-01-20
+
+### Fixed
+- **Backward compatibility for card configuration**: Fixed configuration error when upgrading from v1.9.5 or earlier
+  - Error: Card not loading due to invalid 'mood' device type in old configurations
+  - Root cause: Changed DeviceType from 'mood' to 'local_mood', 'general_mood', 'timed_mood'
+  - Solution: Automatically migrate old 'mood' type to three new mood types
+  - Fixed default_tab undefined type warning
+  - **Impact:** Existing card configurations now work without manual YAML edits
+
+**Test Card Version:** v1.9.8 (updated from v1.9.7)
+
 ## [1.9.7] - 2026-01-20
 
 ### Added
