@@ -40,13 +40,6 @@ export class TeletaskTestCard extends LitElement {
   }
 
   /**
-   * Return the card configuration schema for the UI editor
-   */
-  public static getConfigElement() {
-    return document.createElement('teletask-test-card-editor');
-  }
-
-  /**
    * Return stub config for card picker
    */
   public static getStubConfig() {
@@ -132,7 +125,7 @@ export class TeletaskTestCard extends LitElement {
 });
 
 console.info(
-  '%c TELETASK-TEST-CARD %c v1.9.0 ',
+  '%c TELETASK-TEST-CARD %c v1.9.4 ',
   'background-color: #03a9f4; color: #fff; font-weight: bold;',
   'background-color: #333; color: #fff; font-weight: bold;'
 );

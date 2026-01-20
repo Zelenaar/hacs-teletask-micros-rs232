@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.5] - 2026-01-20
+
+### Fixed
+- **Test card config editor error**: Removed non-existent visual editor reference
+  - Error: "Visual editor not supported - this._configElement.setConfig is not a function"
+  - Removed getConfigElement() method that referenced non-existent 'teletask-test-card-editor'
+  - Card now properly shows "YAML configuration only" mode
+  - No more confusing error messages when adding card
+  - **Impact:** Cleaner UX when adding card to dashboard
+
+**Test Card Version:** v1.9.4 (updated from v1.9.0)
+
 ## [1.9.4] - 2026-01-20
 
 ### Fixed
