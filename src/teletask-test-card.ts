@@ -1,6 +1,6 @@
 import { LitElement, html, TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { HomeAssistant, TeletaskTestCardConfig, TabName } from './types';
+import { HomeAssistant, TeletaskTestCardConfig, TabName, DeviceType } from './types';
 import { sharedStyles } from './styles';
 import './device-control-tab';
 import './event-monitor-tab';
@@ -28,16 +28,27 @@ export class TeletaskTestCard extends LitElement {
       throw new Error('Invalid configuration');
     }
 
-    // Migrate old 'mood' type to new separate mood types (backward compatibility)
-    let deviceTypes = config.show_device_types || ['relay', 'dimmer', 'local_mood', 'general_mood', 'timed_mood', 'flag'];
+    // Sanitize and migrate device types
+    const rawTypes = (config as any).show_device_types || ['relay', 'dimmer', 'local_mood', 'general_mood', 'timed_mood', 'flag'];
+    const validTypes: DeviceType[] = ['relay', 'dimmer', 'local_mood', 'general_mood', 'timed_mood', 'flag'];
+    let deviceTypes: DeviceType[] = [];
 
-    // @ts-ignore - Allow 'mood' for backward compatibility
-    if (deviceTypes.includes('mood')) {
-      // Replace 'mood' with the three new mood types
-      deviceTypes = deviceTypes
-        // @ts-ignore
-        .filter(type => type !== 'mood')
-        .concat(['local_mood', 'general_mood', 'timed_mood']);
+    // Filter and migrate device types
+    for (const type of rawTypes) {
+      if (type === 'mood') {
+        // Migrate old 'mood' to new types
+        if (!deviceTypes.includes('local_mood')) deviceTypes.push('local_mood');
+        if (!deviceTypes.includes('general_mood')) deviceTypes.push('general_mood');
+        if (!deviceTypes.includes('timed_mood')) deviceTypes.push('timed_mood');
+      } else if (validTypes.includes(type as DeviceType)) {
+        // Only include valid types
+        deviceTypes.push(type as DeviceType);
+      }
+    }
+
+    // Ensure we have at least one type
+    if (deviceTypes.length === 0) {
+      deviceTypes = ['relay', 'dimmer', 'local_mood', 'general_mood', 'timed_mood', 'flag'];
     }
 
     this._config = {
@@ -45,7 +56,6 @@ export class TeletaskTestCard extends LitElement {
       default_tab: config.default_tab || 'devices',
       show_device_types: deviceTypes,
       max_events: config.max_events || 100,
-      ...config,
     };
 
     this._activeTab = this._config.default_tab || 'devices';
@@ -137,7 +147,7 @@ export class TeletaskTestCard extends LitElement {
 });
 
 console.info(
-  '%c TELETASK-TEST-CARD %c v1.9.8 ',
+  '%c TELETASK-TEST-CARD %c v1.9.10 ',
   'background-color: #03a9f4; color: #fff; font-weight: bold;',
   'background-color: #333; color: #fff; font-weight: bold;'
 );

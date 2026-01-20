@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.9.10] - 2026-01-20
+
+### Fixed
+- **CRITICAL: Configuration error after v1.9.9 update**: Completely rewrote config validation
+  - Bug: Card failed to load with configuration error after updating
+  - Root cause: Config spread operator overwriting corrected device types
+  - Solution: Robust config sanitization that filters invalid types and migrates 'mood'
+  - Added validation to ensure only valid DeviceType values are used
+  - Removed problematic spread operator that caused override issues
+  - **Impact:** Card now loads correctly even with old/invalid configurations
+
+### Changed
+- **Rebuilt frontend card**: v1.9.9 was backend-only, missing frontend rebuild
+  - Test card version now v1.9.10 (synced with backend)
+
+**Test Card Version:** v1.9.10 (updated from v1.9.8)
+
 ## [1.9.9] - 2026-01-20
 
 ### Fixed
