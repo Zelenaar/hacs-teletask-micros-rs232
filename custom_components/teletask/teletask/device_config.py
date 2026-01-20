@@ -1,7 +1,7 @@
 
 #################################################################################################
 # File:    device_config.py
-# Version: 1.3
+# Version: 1.4
 #
 # Description:
 #   Loader for TeleTask device configuration.
@@ -64,6 +64,7 @@ class DeviceConfig:
     flags: Dict[int, DeviceInfo] = field(default_factory=dict)
     local_moods: Dict[int, DeviceInfo] = field(default_factory=dict)
     general_moods: Dict[int, DeviceInfo] = field(default_factory=dict)
+    timed_moods: Dict[int, DeviceInfo] = field(default_factory=dict)
     inputs: Dict[int, DeviceInfo] = field(default_factory=dict)
     sensors: Dict[int, SensorInfo] = field(default_factory=dict)
 
@@ -81,8 +82,11 @@ class DeviceConfig:
 
     def get_mood(self, num: int, mood_type: str = "LOCAL") -> Optional[DeviceInfo]:
         """Get mood info by number and type."""
-        if mood_type.upper() == "GENERAL":
+        mood_upper = mood_type.upper()
+        if mood_upper == "GENERAL":
             return self.general_moods.get(num)
+        elif mood_upper == "TIMED":
+            return self.timed_moods.get(num)
         return self.local_moods.get(num)
 
     def get_input(self, num: int) -> Optional[DeviceInfo]:
@@ -106,10 +110,11 @@ class DeviceConfig:
         return sorted(self.flags.values(), key=lambda d: d.num)
 
     def get_all_moods(self) -> List[DeviceInfo]:
-        """Get all configured moods (local + general) sorted by type and number."""
+        """Get all configured moods (local + general + timed) sorted by type and number."""
         local = sorted(self.local_moods.values(), key=lambda d: d.num)
         general = sorted(self.general_moods.values(), key=lambda d: d.num)
-        return local + general
+        timed = sorted(self.timed_moods.values(), key=lambda d: d.num)
+        return local + general + timed
 
     def get_all_inputs(self) -> List[DeviceInfo]:
         """Get all configured inputs sorted by number."""
@@ -190,7 +195,8 @@ def load_device_config(config_path: str = "config/devices.json") -> DeviceConfig
                 matter=item.get("matter", False)
             )
 
-    # Parse moods (separate by type)
+    # Parse moods - support both old "moods" format and new separate keys
+    # Old format: "moods" array with "type" field
     for item in data.get("moods", []):
         num = item.get("num")
         mood_type = item.get("type", "LOCAL").upper()
@@ -206,8 +212,50 @@ def load_device_config(config_path: str = "config/devices.json") -> DeviceConfig
             )
             if mood_type == "GENERAL":
                 config.general_moods[num] = info
+            elif mood_type == "TIMED":
+                config.timed_moods[num] = info
             else:
                 config.local_moods[num] = info
+
+    # New format: separate "local_moods", "general_moods", "timed_moods" arrays
+    for item in data.get("local_moods", []):
+        num = item.get("num")
+        if num is not None:
+            config.local_moods[num] = DeviceInfo(
+                num=num,
+                name=item.get("name", f"Local Mood {num}"),
+                room=item.get("room", ""),
+                icon=item.get("icon", ""),
+                type="LOCAL",
+                ha=item.get("ha", True),
+                matter=item.get("matter", False)
+            )
+
+    for item in data.get("general_moods", []):
+        num = item.get("num")
+        if num is not None:
+            config.general_moods[num] = DeviceInfo(
+                num=num,
+                name=item.get("name", f"General Mood {num}"),
+                room=item.get("room", ""),
+                icon=item.get("icon", ""),
+                type="GENERAL",
+                ha=item.get("ha", True),
+                matter=item.get("matter", False)
+            )
+
+    for item in data.get("timed_moods", []):
+        num = item.get("num")
+        if num is not None:
+            config.timed_moods[num] = DeviceInfo(
+                num=num,
+                name=item.get("name", f"Timed Mood {num}"),
+                room=item.get("room", ""),
+                icon=item.get("icon", ""),
+                type="TIMED",
+                ha=item.get("ha", True),
+                matter=item.get("matter", False)
+            )
 
     # Parse inputs (digital inputs / binary sensors)
     for item in data.get("inputs", []):

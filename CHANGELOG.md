@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.11.0] - 2026-01-21
+
+### Fixed
+- **Timed Moods Now Load from NBT Extraction**: Added `timed_moods` field to `device_config.py`
+  - Issue: GUI NBT extraction tool creates `timed_moods` array in devices.json
+  - Previous bug: `device_config.py` didn't recognize `timed_moods` field
+  - Impact: Extracted timed moods weren't being loaded into Home Assistant
+  - Solution: Added `timed_moods` field to DeviceConfig dataclass
+  - Backward compatibility: Supports both old "moods" format and new separate keys
+
+### Changed
+- **Device Config (v1.4)**: Enhanced mood loading to support three separate mood types
+  - Added `timed_moods` field to DeviceConfig
+  - Updated `get_mood()` to handle TIMED type
+  - Updated `get_all_moods()` to include timed moods
+  - Supports loading from both formats:
+    - Old: `"moods"` array with `"type"` field
+    - New: Separate `"local_moods"`, `"general_moods"`, `"timed_moods"` arrays
+
 ## [1.10.0] - 2026-01-20
 
 ### Fixed
