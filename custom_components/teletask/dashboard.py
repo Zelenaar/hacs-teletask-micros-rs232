@@ -15,6 +15,7 @@ import os
 from typing import Any, Dict, List
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.storage import Store
 from homeassistant.util import slugify
 
 _LOGGER = logging.getLogger(__name__)
@@ -94,7 +95,7 @@ async def async_create_dashboard(
 
     # Save dashboard to storage
     try:
-        store = hass.helpers.storage.Store(STORAGE_VERSION, STORAGE_KEY)
+        store = Store(hass, STORAGE_VERSION, STORAGE_KEY)
         await store.async_save(dashboard_config)
 
         _LOGGER.info("TeleTask dashboard configuration saved to storage")
@@ -227,7 +228,7 @@ def _generate_testing_tab() -> Dict[str, Any]:
 async def async_remove_dashboard(hass: HomeAssistant) -> None:
     """Remove TeleTask dashboard storage."""
     try:
-        store = hass.helpers.storage.Store(STORAGE_VERSION, STORAGE_KEY)
+        store = Store(hass, STORAGE_VERSION, STORAGE_KEY)
         await store.async_remove()
         _LOGGER.info("Removed TeleTask dashboard storage")
     except Exception as e:
