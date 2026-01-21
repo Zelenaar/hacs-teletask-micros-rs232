@@ -1,7 +1,7 @@
 
 #################################################################################################
 # File:    __init__.py
-# Version: 1.9.4 - Nuclear deduplication: force clear all, then assign one (hotfix for v1.14.3)
+# Version: 1.10.0 - Auto-generated dashboard with 3 tabs (Moods/Entities/Testing)
 #
 # TeleTask MICROS custom component for Home Assistant
 #
@@ -20,6 +20,7 @@ from homeassistant.helpers import entity_registry as er, label_registry as lr, a
 from homeassistant.components.frontend import add_extra_js_url
 
 from .teletask_hub import TeletaskHub
+from . import dashboard
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -69,6 +70,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Create areas from rooms and assign entities
     await _async_create_areas_and_assign_entities(hass, entry, hub)
+
+    # Create TeleTask dashboard
+    device_name = hub.device_config.device_name if hub.device_config else "TeleTask MICROS"
+    await dashboard.async_create_dashboard(hass, entry.entry_id, device_name, hub.device_config)
 
     return True
 
@@ -451,5 +456,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id)
+        # Remove TeleTask dashboard
+        await dashboard.async_remove_dashboard(hass)
 
     return unload_ok

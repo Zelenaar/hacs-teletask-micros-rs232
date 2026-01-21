@@ -1,7 +1,8 @@
 {
   "_comment": "TeleTask device configuration - Example file",
-  "_version": "1.5",
+  "_version": "1.6",
   "_ha_info": "ha=true exposes device to Home Assistant, matter=true also exposes via Matter (requires ha=true)",
+  "deviceName": "TeleTask MICROS",
   "rooms": [
     {
       "teletaskName": "Living Room",

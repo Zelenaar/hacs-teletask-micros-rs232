@@ -1,7 +1,7 @@
 
 #################################################################################################
 # File:    device_config.py
-# Version: 1.5
+# Version: 1.6
 #
 # Description:
 #   Loader for TeleTask device configuration.
@@ -10,6 +10,7 @@
 #   - ha: whether to expose device to Home Assistant
 #   - matter: whether to expose via Matter (only if ha=true)
 #   NEW: rooms section with teletaskName and friendlyName for HA area creation
+#   NEW: deviceName field for dashboard title
 #################################################################################################
 
 import json
@@ -67,6 +68,7 @@ class SensorInfo:
 @dataclass
 class DeviceConfig:
     """Container for all device configurations."""
+    device_name: str = "TeleTask MICROS"  # Device name for dashboard title
     relays: Dict[int, DeviceInfo] = field(default_factory=dict)
     dimmers: Dict[int, DeviceInfo] = field(default_factory=dict)
     flags: Dict[int, DeviceInfo] = field(default_factory=dict)
@@ -180,7 +182,10 @@ def load_device_config(config_path: str = "config/devices.json") -> DeviceConfig
     except json.JSONDecodeError as e:
         raise ValueError(f"Invalid JSON in device config: {e}")
 
-    config = DeviceConfig()
+    # Extract device name (with fallback to default)
+    device_name = data.get("deviceName", "TeleTask MICROS")
+
+    config = DeviceConfig(device_name=device_name)
 
     # Parse relays
     for item in data.get("relays", []):

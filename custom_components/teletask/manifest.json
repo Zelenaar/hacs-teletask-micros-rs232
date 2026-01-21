@@ -1,7 +1,7 @@
 {
   "domain": "teletask",
   "name": "TeleTask MICROS",
-  "version": "1.14.3",
+  "version": "1.15.0",
   "documentation": "https://github.com/Zelenaar/hacs-teletask-micros-rs232",
   "issue_tracker": "https://github.com/Zelenaar/hacs-teletask-micros-rs232/issues",
   "requirements": ["pyserial>=3.5"],
