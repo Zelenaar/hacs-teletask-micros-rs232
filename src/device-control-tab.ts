@@ -64,11 +64,13 @@ export class DeviceControlTab extends LitElement {
           deviceType = 'local_mood';
         }
       } else if (type === 'general_mood') {
-        if (domain === 'button' && attrs.teletask_function === 9) {
+        // CRITICAL: GENERAL = 10 (not 9!)
+        if (domain === 'button' && attrs.teletask_function === 10) {
           deviceType = 'general_mood';
         }
       } else if (type === 'timed_mood') {
-        if (domain === 'button' && attrs.teletask_function === 10) {
+        // CRITICAL: TIMED = 9 (not 10!)
+        if (domain === 'button' && attrs.teletask_function === 9) {
           deviceType = 'timed_mood';
         }
       } else if (type === 'flag') {

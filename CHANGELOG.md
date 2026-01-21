@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.12.0] - 2026-01-21
+
+### Fixed
+- **CRITICAL: Swapped Function Codes for GENERAL and TIMED Moods**
+  - Issue: GENERAL moods used function code 9, TIMED moods used function code 10
+  - Correct: TIMED=9, GENERAL=10 (as per TeleTask protocol and PROSOFT)
+  - Impact: GENERAL and TIMED moods were completely broken (sending wrong commands)
+  - Files fixed:
+    - `button.py`: Fixed func_map {"LOCAL": 8, "TIMED": 9, "GENERAL": 10}
+    - `device-control-tab.ts`: Fixed function code checks for mood filtering
+  - **All moods now work correctly with proper TeleTask protocol codes**
+
+### Confirmed Working
+- ✓ Room filtering works for all mood types (local, general, timed)
+- ✓ Test card properly filters moods by teletask_function codes
+- ✓ Backend button entities expose correct function codes in attributes
+- ✓ device_config.py loads all three mood types from separate arrays
+
 ## [1.11.0] - 2026-01-21
 
 ### Fixed
