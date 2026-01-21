@@ -1,7 +1,7 @@
 
 #################################################################################################
 # File:    __init__.py
-# Version: 1.8.1 - Fixed TeleTask Test Card frontend resource registration
+# Version: 1.9.0 - Auto-create areas from rooms and assign entities
 #
 # TeleTask MICROS custom component for Home Assistant
 #
@@ -16,7 +16,7 @@ import os
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers import entity_registry as er, label_registry as lr
+from homeassistant.helpers import entity_registry as er, label_registry as lr, area_registry as ar
 from homeassistant.components.frontend import add_extra_js_url
 
 from .teletask_hub import TeletaskHub
@@ -66,6 +66,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Assign matterhomes label to Matter-enabled entities
     await _async_assign_matter_labels(hass, entry, hub)
+
+    # Create areas from rooms and assign entities
+    await _async_create_areas_and_assign_entities(hass, entry, hub)
 
     return True
 
@@ -242,6 +245,130 @@ def _should_have_matter_label(unique_id: str, matter_devices: dict) -> bool:
         pass
 
     return False
+
+
+async def _async_create_areas_and_assign_entities(
+    hass: HomeAssistant, entry: ConfigEntry, hub: TeletaskHub
+) -> None:
+    """
+    Create Home Assistant areas from device rooms and assign entities to them.
+
+    This function:
+    1. Extracts unique room names from devices.json
+    2. Creates HA areas for each room (if not already exists)
+    3. Assigns TeleTask entities to their corresponding areas based on room attribute
+    """
+    if not hub.device_config:
+        _LOGGER.debug("No device config available, skipping area creation")
+        return
+
+    # Collect all unique rooms from device config
+    unique_rooms = set()
+
+    # Get rooms from all device types
+    for relay in hub.device_config.get_all_relays():
+        if relay.room:
+            unique_rooms.add(relay.room)
+
+    for dimmer in hub.device_config.get_all_dimmers():
+        if dimmer.room:
+            unique_rooms.add(dimmer.room)
+
+    for mood in hub.device_config.get_all_moods():
+        if mood.room:
+            unique_rooms.add(mood.room)
+
+    for flag in hub.device_config.get_all_flags():
+        if flag.room:
+            unique_rooms.add(flag.room)
+
+    for input_device in hub.device_config.get_all_inputs():
+        if input_device.room:
+            unique_rooms.add(input_device.room)
+
+    for sensor in hub.device_config.get_all_sensors():
+        if sensor.room:
+            unique_rooms.add(sensor.room)
+
+    if not unique_rooms:
+        _LOGGER.debug("No rooms found in device config, skipping area creation")
+        return
+
+    _LOGGER.info("Found %d unique rooms in device config", len(unique_rooms))
+
+    # Get area registry
+    area_registry = ar.async_get(hass)
+
+    # Create areas for each room (if not already exists)
+    # Map room name to area_id for entity assignment
+    room_to_area_id = {}
+    areas_created = 0
+
+    for room_name in sorted(unique_rooms):
+        # Check if area with this name already exists
+        existing_area = None
+        for area in area_registry.areas.values():
+            if area.name == room_name:
+                existing_area = area
+                break
+
+        if existing_area:
+            # Area already exists, use it
+            room_to_area_id[room_name] = existing_area.id
+            _LOGGER.debug("Area '%s' already exists (ID: %s)", room_name, existing_area.id)
+        else:
+            # Create new area
+            # Generate normalized area_id from room name (lowercase, replace spaces/special chars with underscores)
+            area_id = room_name.lower().replace(" ", "_").replace("-", "_").replace("/", "_")
+            # Remove consecutive underscores
+            import re
+            area_id = re.sub(r'_+', '_', area_id).strip('_')
+
+            try:
+                new_area = area_registry.async_create(
+                    name=room_name,
+                )
+                room_to_area_id[room_name] = new_area.id
+                areas_created += 1
+                _LOGGER.info("Created area '%s' (ID: %s)", room_name, new_area.id)
+            except Exception as e:
+                _LOGGER.warning("Failed to create area '%s': %s", room_name, e)
+
+    if areas_created:
+        _LOGGER.info("Created %d new areas from device rooms", areas_created)
+
+    # Now assign entities to their areas
+    entity_registry = er.async_get(hass)
+    entities_assigned = 0
+
+    for entity_entry in er.async_entries_for_config_entry(entity_registry, entry.entry_id):
+        try:
+            # Get the room attribute from entity's extra state attributes
+            # We need to check the entity state to get the room
+            state = hass.states.get(entity_entry.entity_id)
+            if not state:
+                continue
+
+            room = state.attributes.get("room")
+            if not room or room not in room_to_area_id:
+                continue
+
+            target_area_id = room_to_area_id[room]
+
+            # Only update if entity is not already assigned to this area
+            if entity_entry.area_id != target_area_id:
+                entity_registry.async_update_entity(
+                    entity_entry.entity_id,
+                    area_id=target_area_id
+                )
+                entities_assigned += 1
+                _LOGGER.debug("Assigned %s to area '%s'", entity_entry.entity_id, room)
+        except Exception as e:
+            _LOGGER.warning("Failed to assign entity %s to area: %s", entity_entry.entity_id, e)
+
+    if entities_assigned:
+        _LOGGER.info("Assigned %d entities to their rooms (areas)", entities_assigned)
+
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload TeleTask config entry."""

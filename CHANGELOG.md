@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.13.0] - 2026-01-21
+
+### Added
+- **Auto-Create Areas from Rooms**: Integration now automatically creates Home Assistant areas based on room names in devices.json
+  - Extracts unique room names from all device types (relays, dimmers, moods, flags, inputs, sensors)
+  - Creates HA areas for each unique room if not already exists
+  - Automatically assigns TeleTask entities to their corresponding areas based on room attribute
+  - Areas are created with normalized IDs (lowercase, spaces/dashes replaced with underscores)
+  - Safe: Only creates areas that don't exist, doesn't overwrite existing areas
+  - Entities are only reassigned if they're not already in the correct area
+  - **Result:** Better organization in Home Assistant UI, entities grouped by room automatically
+
+### How It Works
+1. During integration setup, reads all rooms from devices.json
+2. Creates HA area for each unique room (e.g., "NG1-Orangerie", "NV1-Sl.K Ouders", "OG1-Bibliotheek")
+3. Assigns each entity to its area based on the "room" attribute from devices.json
+4. Logs creation/assignment actions for visibility
+
 ## [1.12.0] - 2026-01-21
 
 ### Fixed
