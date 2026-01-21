@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.13.1] - 2026-01-21
+
+### Fixed
+- **Duplicate Entities in Area Panel**: Fixed issue where same device appeared 3 times in area overview
+  - **Root Cause:** Relays create both light and switch entities, both were being assigned to areas
+  - **Solution:** Implemented deduplication logic with preference for primary entities
+    - For relays (function=1): Prefer light entity over switch entity
+    - Only assign the "preferred" entity to the area
+    - Unassign duplicate entities from all areas
+  - **Implementation:** Two-pass algorithm:
+    1. First pass: Group all entities by device key (function, number)
+    2. Second pass: Select preferred entity per device, assign to area, unassign duplicates
+  - **Result:** Each physical device now appears only once in area panels
+
 ## [1.13.0] - 2026-01-21
 
 ### Added
