@@ -1,7 +1,7 @@
 
 #################################################################################################
 # File:    device_config.py
-# Version: 1.4
+# Version: 1.5
 #
 # Description:
 #   Loader for TeleTask device configuration.
@@ -9,12 +9,20 @@
 #   Supports: relays, dimmers, flags, moods, inputs (binary), sensors (analog).
 #   - ha: whether to expose device to Home Assistant
 #   - matter: whether to expose via Matter (only if ha=true)
+#   NEW: rooms section with teletaskName and friendlyName for HA area creation
 #################################################################################################
 
 import json
 import os
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, field
+
+
+@dataclass
+class RoomInfo:
+    """Information about a room."""
+    teletask_name: str  # e.g., "NG1-Orangerie"
+    friendly_name: str  # e.g., "Orangerie" (used for HA areas)
 
 
 @dataclass
@@ -67,6 +75,7 @@ class DeviceConfig:
     timed_moods: Dict[int, DeviceInfo] = field(default_factory=dict)
     inputs: Dict[int, DeviceInfo] = field(default_factory=dict)
     sensors: Dict[int, SensorInfo] = field(default_factory=dict)
+    rooms: Dict[str, RoomInfo] = field(default_factory=dict)  # Key: teletaskName
 
     def get_relay(self, num: int) -> Optional[DeviceInfo]:
         """Get relay info by number."""
@@ -123,6 +132,26 @@ class DeviceConfig:
     def get_all_sensors(self) -> List[SensorInfo]:
         """Get all configured sensors sorted by number."""
         return sorted(self.sensors.values(), key=lambda d: d.num)
+
+    def get_room_friendly_name(self, teletask_name: str) -> str:
+        """
+        Get friendly name for a room by TeleTask name.
+        If room not found in rooms section, returns the TeleTask name as-is.
+
+        Args:
+            teletask_name: The TeleTask room name (e.g., "NG1-Orangerie")
+
+        Returns:
+            Friendly name if defined, otherwise the TeleTask name
+        """
+        room_info = self.rooms.get(teletask_name)
+        if room_info:
+            return room_info.friendly_name
+        return teletask_name
+
+    def get_all_rooms(self) -> List[RoomInfo]:
+        """Get all configured rooms sorted by TeleTask name."""
+        return sorted(self.rooms.values(), key=lambda r: r.teletask_name)
 
 
 def load_device_config(config_path: str = "config/devices.json") -> DeviceConfig:
@@ -284,6 +313,16 @@ def load_device_config(config_path: str = "config/devices.json") -> DeviceConfig
                 unit=item.get("unit", ""),
                 ha=item.get("ha", True),
                 matter=item.get("matter", False)
+            )
+
+    # Parse rooms section
+    for item in data.get("rooms", []):
+        teletask_name = item.get("teletaskName", "")
+        friendly_name = item.get("friendlyName", "")
+        if teletask_name and friendly_name:
+            config.rooms[teletask_name] = RoomInfo(
+                teletask_name=teletask_name,
+                friendly_name=friendly_name
             )
 
     return config

@@ -1,7 +1,29 @@
 {
   "_comment": "TeleTask device configuration - Example file",
-  "_version": "1.4",
+  "_version": "1.5",
   "_ha_info": "ha=true exposes device to Home Assistant, matter=true also exposes via Matter (requires ha=true)",
+  "rooms": [
+    {
+      "teletaskName": "Living Room",
+      "friendlyName": "Living Room"
+    },
+    {
+      "teletaskName": "Bathroom",
+      "friendlyName": "Bathroom"
+    },
+    {
+      "teletaskName": "Dining Room",
+      "friendlyName": "Dining Room"
+    },
+    {
+      "teletaskName": "Entrance",
+      "friendlyName": "Entrance Hall"
+    },
+    {
+      "teletaskName": "Hallway",
+      "friendlyName": "Hallway"
+    }
+  ],
   "relays": [
     {
       "num": 1,

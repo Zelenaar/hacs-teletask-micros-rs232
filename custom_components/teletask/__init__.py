@@ -305,34 +305,37 @@ async def _async_create_areas_and_assign_entities(
     areas_created = 0
 
     for room_name in sorted(unique_rooms):
-        # Check if area with this name already exists
+        # Get friendly name from rooms section (if available)
+        display_name = hub.device_config.get_room_friendly_name(room_name)
+
+        # Check if area with this display name already exists
         existing_area = None
         for area in area_registry.areas.values():
-            if area.name == room_name:
+            if area.name == display_name:
                 existing_area = area
                 break
 
         if existing_area:
             # Area already exists, use it
             room_to_area_id[room_name] = existing_area.id
-            _LOGGER.debug("Area '%s' already exists (ID: %s)", room_name, existing_area.id)
+            _LOGGER.debug("Area '%s' already exists (ID: %s)", display_name, existing_area.id)
         else:
             # Create new area
-            # Generate normalized area_id from room name (lowercase, replace spaces/special chars with underscores)
-            area_id = room_name.lower().replace(" ", "_").replace("-", "_").replace("/", "_")
+            # Generate normalized area_id from display name (lowercase, replace spaces/special chars with underscores)
+            area_id = display_name.lower().replace(" ", "_").replace("-", "_").replace("/", "_")
             # Remove consecutive underscores
             import re
             area_id = re.sub(r'_+', '_', area_id).strip('_')
 
             try:
                 new_area = area_registry.async_create(
-                    name=room_name,
+                    name=display_name,
                 )
                 room_to_area_id[room_name] = new_area.id
                 areas_created += 1
-                _LOGGER.info("Created area '%s' (ID: %s)", room_name, new_area.id)
+                _LOGGER.info("Created area '%s' (ID: %s) from TeleTask room '%s'", display_name, new_area.id, room_name)
             except Exception as e:
-                _LOGGER.warning("Failed to create area '%s': %s", room_name, e)
+                _LOGGER.warning("Failed to create area '%s': %s", display_name, e)
 
     if areas_created:
         _LOGGER.info("Created %d new areas from device rooms", areas_created)
