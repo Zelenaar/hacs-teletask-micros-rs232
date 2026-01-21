@@ -15,16 +15,25 @@ import os
 from typing import Any, Dict, List
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.storage import Store
 from homeassistant.util import slugify
+from homeassistant.components import frontend
 from homeassistant.components.lovelace import dashboard
+from homeassistant.components.lovelace.const import (
+    CONF_ICON,
+    CONF_REQUIRE_ADMIN,
+    CONF_SHOW_IN_SIDEBAR,
+    CONF_TITLE,
+    CONF_URL_PATH,
+    DOMAIN as LOVELACE_DOMAIN,
+    LOVELACE_DATA,
+    MODE_STORAGE,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
 DASHBOARD_URL = "teletask"
 DASHBOARD_ICON = "mdi:home-automation"
-STORAGE_KEY = f"lovelace.{DASHBOARD_URL}"
-STORAGE_VERSION = 1
+DASHBOARD_ID = "teletask_dashboard"
 
 
 async def async_create_dashboard(
@@ -85,8 +94,8 @@ async def async_create_dashboard(
         except Exception as e:
             _LOGGER.warning("Failed to process entity %s: %s", entity_entry.entity_id, e)
 
-    # Build dashboard configuration
-    dashboard_config = {
+    # Build dashboard views configuration
+    dashboard_views = {
         "views": [
             _generate_moods_tab(general_moods, timed_moods, mood_entities_by_area),
             _generate_entities_tab(entities_by_area),
@@ -94,60 +103,72 @@ async def async_create_dashboard(
         ]
     }
 
-    # Save dashboard to storage
+    # Register and save dashboard
     try:
-        store = Store(hass, STORAGE_VERSION, STORAGE_KEY)
-        await store.async_save(dashboard_config)
-
-        _LOGGER.info("TeleTask dashboard configuration saved to storage")
-
-        # Register dashboard in lovelace config
-        await _register_dashboard_in_config(hass, device_name)
+        await _register_dashboard_in_lovelace(hass, entry_id, device_name, dashboard_views)
+        _LOGGER.info("TeleTask dashboard created and registered successfully")
 
     except Exception as e:
-        _LOGGER.error("Failed to save dashboard: %s", e)
+        _LOGGER.error("Failed to create dashboard: %s", e)
         import traceback
         _LOGGER.debug("Traceback: %s", traceback.format_exc())
 
 
-async def _register_dashboard_in_config(hass: HomeAssistant, device_name: str) -> None:
-    """Register dashboard in HA's lovelace configuration."""
-    try:
-        # Check if lovelace data is available
-        if "lovelace" not in hass.data:
-            _LOGGER.warning("Lovelace component not loaded, cannot register dashboard")
-            return
+async def _register_dashboard_in_lovelace(
+    hass: HomeAssistant,
+    entry_id: str,
+    device_name: str,
+    dashboard_views: dict
+) -> None:
+    """Register dashboard in HA's lovelace system and save content."""
+    # Check if lovelace data is available
+    if LOVELACE_DATA not in hass.data:
+        _LOGGER.warning("Lovelace component not loaded, cannot register dashboard")
+        return
 
-        lovelace_data = hass.data["lovelace"]
+    lovelace_data = hass.data[LOVELACE_DATA]
 
-        # Create dashboard configuration
-        dashboard_config = {
-            "mode": "storage",
-            "title": device_name,
-            "icon": DASHBOARD_ICON,
-            "show_in_sidebar": True,
-            "require_admin": False,
-        }
+    # Create dashboard configuration matching HA's expected format
+    dashboard_config = {
+        "id": DASHBOARD_ID,
+        CONF_URL_PATH: DASHBOARD_URL,
+        CONF_TITLE: device_name,
+        CONF_ICON: DASHBOARD_ICON,
+        CONF_SHOW_IN_SIDEBAR: True,
+        CONF_REQUIRE_ADMIN: False,
+    }
 
-        # Create LovelaceStorage instance
-        lovelace_dashboard = dashboard.LovelaceStorage(hass, DASHBOARD_URL, dashboard_config)
+    # Create LovelaceStorage instance with proper signature
+    lovelace_dashboard = dashboard.LovelaceStorage(hass, dashboard_config)
 
-        # Register dashboard
-        lovelace_data["dashboards"][DASHBOARD_URL] = lovelace_dashboard
+    # Add to dashboards registry
+    lovelace_data.dashboards[DASHBOARD_URL] = lovelace_dashboard
 
-        _LOGGER.info(
-            "\n"
-            "="*70 + "\n"
-            "TeleTask Dashboard Registered!\n"
-            "="*70 + "\n"
-            f"Dashboard '{device_name}' has been automatically added to your sidebar.\n"
-            f"You can find it in the left menu with the {DASHBOARD_ICON} icon.\n"
-            "="*70
-        )
-    except Exception as e:
-        _LOGGER.error("Failed to register dashboard: %s", e)
-        import traceback
-        _LOGGER.debug("Traceback: %s", traceback.format_exc())
+    # Register panel in frontend
+    frontend.async_register_built_in_panel(
+        hass,
+        LOVELACE_DOMAIN,
+        frontend_url_path=DASHBOARD_URL,
+        require_admin=False,
+        config={"mode": MODE_STORAGE},
+        sidebar_title=device_name,
+        sidebar_icon=DASHBOARD_ICON,
+        update=False,
+    )
+
+    # Save dashboard content
+    await lovelace_dashboard.async_save(dashboard_views)
+
+    _LOGGER.info(
+        "\n"
+        "="*70 + "\n"
+        "TeleTask Dashboard Created!\n"
+        "="*70 + "\n"
+        f"Dashboard '{device_name}' has been automatically added to your sidebar.\n"
+        f"You can find it in the left menu with the {DASHBOARD_ICON} icon.\n"
+        f"URL: /teletask\n"
+        "="*70
+    )
 
 
 def _generate_moods_tab(
@@ -242,16 +263,21 @@ def _generate_testing_tab() -> Dict[str, Any]:
 async def async_remove_dashboard(hass: HomeAssistant) -> None:
     """Remove TeleTask dashboard storage and unregister from lovelace."""
     try:
-        # Remove from lovelace dashboards
-        if "lovelace" in hass.data:
-            lovelace_data = hass.data["lovelace"]
-            if DASHBOARD_URL in lovelace_data.get("dashboards", {}):
-                del lovelace_data["dashboards"][DASHBOARD_URL]
-                _LOGGER.info("Unregistered TeleTask dashboard from sidebar")
+        # Check if lovelace data exists
+        if LOVELACE_DATA not in hass.data:
+            return
 
-        # Remove storage file
-        store = Store(hass, STORAGE_VERSION, STORAGE_KEY)
-        await store.async_remove()
-        _LOGGER.info("Removed TeleTask dashboard storage")
+        lovelace_data = hass.data[LOVELACE_DATA]
+
+        # Remove from dashboards registry and delete storage
+        if DASHBOARD_URL in lovelace_data.dashboards:
+            dashboard_instance = lovelace_data.dashboards.pop(DASHBOARD_URL)
+            await dashboard_instance.async_delete()
+            _LOGGER.info("Removed TeleTask dashboard")
+
+        # Remove panel from frontend
+        frontend.async_remove_panel(hass, DASHBOARD_URL)
+        _LOGGER.info("Unregistered TeleTask dashboard from sidebar")
+
     except Exception as e:
         _LOGGER.debug("Failed to remove dashboard (might not exist): %s", e)
