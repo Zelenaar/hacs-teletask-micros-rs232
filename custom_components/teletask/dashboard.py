@@ -17,6 +17,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.storage import Store
 from homeassistant.util import slugify
+from homeassistant.components.lovelace import dashboard
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -112,28 +113,41 @@ async def async_create_dashboard(
 async def _register_dashboard_in_config(hass: HomeAssistant, device_name: str) -> None:
     """Register dashboard in HA's lovelace configuration."""
     try:
-        # Add dashboard to configuration.yaml lovelace dashboards
-        # This requires manual user action, so we'll log instructions
+        # Check if lovelace data is available
+        if "lovelace" not in hass.data:
+            _LOGGER.warning("Lovelace component not loaded, cannot register dashboard")
+            return
+
+        lovelace_data = hass.data["lovelace"]
+
+        # Create dashboard configuration
+        dashboard_config = {
+            "mode": "storage",
+            "title": device_name,
+            "icon": DASHBOARD_ICON,
+            "show_in_sidebar": True,
+            "require_admin": False,
+        }
+
+        # Create LovelaceStorage instance
+        lovelace_dashboard = dashboard.LovelaceStorage(hass, DASHBOARD_URL, dashboard_config)
+
+        # Register dashboard
+        lovelace_data["dashboards"][DASHBOARD_URL] = lovelace_dashboard
+
         _LOGGER.info(
             "\n"
             "="*70 + "\n"
-            "TeleTask Dashboard Created!\n"
+            "TeleTask Dashboard Registered!\n"
             "="*70 + "\n"
-            "To add the dashboard to your sidebar, add this to configuration.yaml:\n\n"
-            "lovelace:\n"
-            "  mode: storage\n"
-            "  dashboards:\n"
-            f"    {DASHBOARD_URL}:\n"
-            f"      mode: storage\n"
-            f"      title: {device_name}\n"
-            f"      icon: {DASHBOARD_ICON}\n"
-            f"      show_in_sidebar: true\n"
-            f"      require_admin: false\n\n"
-            "Then restart Home Assistant.\n"
+            f"Dashboard '{device_name}' has been automatically added to your sidebar.\n"
+            f"You can find it in the left menu with the {DASHBOARD_ICON} icon.\n"
             "="*70
         )
     except Exception as e:
-        _LOGGER.debug("Could not log dashboard instructions: %s", e)
+        _LOGGER.error("Failed to register dashboard: %s", e)
+        import traceback
+        _LOGGER.debug("Traceback: %s", traceback.format_exc())
 
 
 def _generate_moods_tab(
@@ -226,8 +240,16 @@ def _generate_testing_tab() -> Dict[str, Any]:
 
 
 async def async_remove_dashboard(hass: HomeAssistant) -> None:
-    """Remove TeleTask dashboard storage."""
+    """Remove TeleTask dashboard storage and unregister from lovelace."""
     try:
+        # Remove from lovelace dashboards
+        if "lovelace" in hass.data:
+            lovelace_data = hass.data["lovelace"]
+            if DASHBOARD_URL in lovelace_data.get("dashboards", {}):
+                del lovelace_data["dashboards"][DASHBOARD_URL]
+                _LOGGER.info("Unregistered TeleTask dashboard from sidebar")
+
+        # Remove storage file
         store = Store(hass, STORAGE_VERSION, STORAGE_KEY)
         await store.async_remove()
         _LOGGER.info("Removed TeleTask dashboard storage")
