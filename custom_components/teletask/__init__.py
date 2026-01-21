@@ -1,7 +1,7 @@
 
 #################################################################################################
 # File:    __init__.py
-# Version: 1.9.1 - Fixed duplicate entities in areas
+# Version: 1.9.2 - Enhanced deduplication with tracking sets (hotfix for v1.14.1)
 #
 # TeleTask MICROS custom component for Home Assistant
 #
@@ -345,13 +345,23 @@ async def _async_create_areas_and_assign_entities(
     # For relays, prefer light entities over switch entities
     entity_registry = er.async_get(hass)
     entities_assigned = 0
+    entities_unassigned = 0
+
+    # Track which entity_ids we've already processed to prevent duplicates
+    processed_entities = set()
 
     # First pass: collect all entities and group by device key
     # device_key = (teletask_function, teletask_number)
     device_entities = {}  # device_key -> [(entity_entry, state, room, domain)]
+    unique_entities = {}  # entity_id -> (entity_entry, state, room, domain) for entities without device key
 
     for entity_entry in er.async_entries_for_config_entry(entity_registry, entry.entry_id):
         try:
+            # Skip if already processed (safety check)
+            if entity_entry.entity_id in processed_entities:
+                _LOGGER.warning("Entity %s already processed, skipping duplicate", entity_entry.entity_id)
+                continue
+
             state = hass.states.get(entity_entry.entity_id)
             if not state:
                 continue
@@ -365,15 +375,9 @@ async def _async_create_areas_and_assign_entities(
             domain = entity_entry.entity_id.split('.')[0]
 
             if teletask_number is None or teletask_function is None:
-                # No device identifiers, assign directly (these are unique)
-                target_area_id = room_to_area_id[room]
-                if entity_entry.area_id != target_area_id:
-                    entity_registry.async_update_entity(
-                        entity_entry.entity_id,
-                        area_id=target_area_id
-                    )
-                    entities_assigned += 1
-                    _LOGGER.debug("Assigned %s to area '%s'", entity_entry.entity_id, room)
+                # No device identifiers, store separately (these are unique)
+                unique_entities[entity_entry.entity_id] = (entity_entry, state, room, domain)
+                processed_entities.add(entity_entry.entity_id)
                 continue
 
             # Group by device key
@@ -381,11 +385,28 @@ async def _async_create_areas_and_assign_entities(
             if device_key not in device_entities:
                 device_entities[device_key] = []
             device_entities[device_key].append((entity_entry, state, room, domain))
+            processed_entities.add(entity_entry.entity_id)
 
         except Exception as e:
             _LOGGER.warning("Failed to process entity %s: %s", entity_entry.entity_id, e)
 
-    # Second pass: for each device, select the preferred entity and assign it
+    # Assign unique entities (those without device keys)
+    for entity_id, (entity_entry, state, room, domain) in unique_entities.items():
+        try:
+            target_area_id = room_to_area_id[room]
+            if entity_entry.area_id != target_area_id:
+                entity_registry.async_update_entity(
+                    entity_entry.entity_id,
+                    area_id=target_area_id
+                )
+                entities_assigned += 1
+                _LOGGER.debug("Assigned unique entity %s to area '%s'", entity_entry.entity_id, room)
+        except Exception as e:
+            _LOGGER.warning("Failed to assign unique entity %s: %s", entity_id, e)
+
+    # Second pass: for each device, select ONE preferred entity and assign ONLY that one
+    assigned_device_entities = set()  # Track which entity_ids got assigned to areas
+
     for device_key, entities in device_entities.items():
         try:
             teletask_function, teletask_number = device_key
@@ -406,7 +427,7 @@ async def _async_create_areas_and_assign_entities(
             entity_entry, state, room, domain = preferred_entity
             target_area_id = room_to_area_id[room]
 
-            # Assign only the preferred entity
+            # Assign ONLY the preferred entity
             if entity_entry.area_id != target_area_id:
                 entity_registry.async_update_entity(
                     entity_entry.entity_id,
@@ -416,21 +437,29 @@ async def _async_create_areas_and_assign_entities(
                 _LOGGER.debug("Assigned %s to area '%s' (preferred for device %s)",
                             entity_entry.entity_id, room, device_key)
 
-            # Unassign other entities for this device (duplicates)
-            for entity_data in entities:
-                other_entry, _, _, _ = entity_data
-                if other_entry.entity_id != entity_entry.entity_id and other_entry.area_id is not None:
-                    entity_registry.async_update_entity(
-                        other_entry.entity_id,
-                        area_id=None
-                    )
-                    _LOGGER.debug("Unassigned duplicate entity %s from areas", other_entry.entity_id)
+            # Mark this entity as assigned
+            assigned_device_entities.add(entity_entry.entity_id)
 
         except Exception as e:
             _LOGGER.warning("Failed to assign device %s to area: %s", device_key, e)
 
+    # Third pass: Unassign ALL non-preferred entities for each device
+    for device_key, entities in device_entities.items():
+        for entity_data in entities:
+            other_entry, _, _, _ = entity_data
+            # If this entity wasn't marked as assigned AND has an area, remove it
+            if other_entry.entity_id not in assigned_device_entities and other_entry.area_id is not None:
+                entity_registry.async_update_entity(
+                    other_entry.entity_id,
+                    area_id=None
+                )
+                entities_unassigned += 1
+                _LOGGER.debug("Unassigned duplicate entity %s from areas", other_entry.entity_id)
+
     if entities_assigned:
         _LOGGER.info("Assigned %d entities to their rooms (areas)", entities_assigned)
+    if entities_unassigned:
+        _LOGGER.info("Unassigned %d duplicate entities from areas", entities_unassigned)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
