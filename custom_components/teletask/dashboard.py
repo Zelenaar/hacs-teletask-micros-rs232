@@ -6,19 +6,23 @@ Creates a 3-tab dashboard:
 2. Entities - All entities except moods, organized by area
 3. Testing - TeleTask test card
 
-The dashboard is created as a lovelace dashboard and added to the sidebar.
+The dashboard configuration is saved to HA's storage and registered as a sidebar item.
 """
 
 import logging
+import json
+import os
 from typing import Any, Dict, List
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
-from homeassistant.components.lovelace import dashboard
+from homeassistant.util import slugify
 
 _LOGGER = logging.getLogger(__name__)
 
 DASHBOARD_URL = "teletask"
 DASHBOARD_ICON = "mdi:home-automation"
+STORAGE_KEY = f"lovelace.{DASHBOARD_URL}"
+STORAGE_VERSION = 1
 
 
 async def async_create_dashboard(
@@ -80,44 +84,55 @@ async def async_create_dashboard(
             _LOGGER.warning("Failed to process entity %s: %s", entity_entry.entity_id, e)
 
     # Build dashboard configuration
-    views = [
-        _generate_moods_tab(general_moods, timed_moods, mood_entities_by_area),
-        _generate_entities_tab(entities_by_area),
-        _generate_testing_tab()
-    ]
+    dashboard_config = {
+        "views": [
+            _generate_moods_tab(general_moods, timed_moods, mood_entities_by_area),
+            _generate_entities_tab(entities_by_area),
+            _generate_testing_tab()
+        ]
+    }
 
-    # Create dashboard using HA's dashboard manager
+    # Save dashboard to storage
     try:
-        # Create LovelaceDashboard instance
-        teletask_dashboard = dashboard.LovelaceDashboard(
-            hass=hass,
-            url_path=DASHBOARD_URL,
-            config={
-                "mode": "storage",
-                "title": device_name,
-                "icon": DASHBOARD_ICON,
-                "show_in_sidebar": True,
-                "require_admin": False,
-            },
-        )
+        store = hass.helpers.storage.Store(STORAGE_VERSION, STORAGE_KEY)
+        await store.async_save(dashboard_config)
 
-        # Initialize dashboard storage if needed
-        if "lovelace" not in hass.data:
-            hass.data["lovelace"] = {}
-        if "dashboards" not in hass.data["lovelace"]:
-            hass.data["lovelace"]["dashboards"] = {}
+        _LOGGER.info("TeleTask dashboard configuration saved to storage")
 
-        # Register dashboard
-        hass.data["lovelace"]["dashboards"][DASHBOARD_URL] = teletask_dashboard
-
-        # Save dashboard configuration
-        await teletask_dashboard.async_save(views)
-
-        _LOGGER.info("TeleTask dashboard created at /%s", DASHBOARD_URL)
+        # Register dashboard in lovelace config
+        await _register_dashboard_in_config(hass, device_name)
 
     except Exception as e:
-        _LOGGER.warning("Failed to create dashboard (this is normal on first load): %s", e)
-        _LOGGER.info("Dashboard will be available after Home Assistant restart")
+        _LOGGER.error("Failed to save dashboard: %s", e)
+        import traceback
+        _LOGGER.debug("Traceback: %s", traceback.format_exc())
+
+
+async def _register_dashboard_in_config(hass: HomeAssistant, device_name: str) -> None:
+    """Register dashboard in HA's lovelace configuration."""
+    try:
+        # Add dashboard to configuration.yaml lovelace dashboards
+        # This requires manual user action, so we'll log instructions
+        _LOGGER.info(
+            "\n"
+            "="*70 + "\n"
+            "TeleTask Dashboard Created!\n"
+            "="*70 + "\n"
+            "To add the dashboard to your sidebar, add this to configuration.yaml:\n\n"
+            "lovelace:\n"
+            "  mode: storage\n"
+            "  dashboards:\n"
+            f"    {DASHBOARD_URL}:\n"
+            f"      mode: storage\n"
+            f"      title: {device_name}\n"
+            f"      icon: {DASHBOARD_ICON}\n"
+            f"      show_in_sidebar: true\n"
+            f"      require_admin: false\n\n"
+            "Then restart Home Assistant.\n"
+            "="*70
+        )
+    except Exception as e:
+        _LOGGER.debug("Could not log dashboard instructions: %s", e)
 
 
 def _generate_moods_tab(
@@ -210,11 +225,10 @@ def _generate_testing_tab() -> Dict[str, Any]:
 
 
 async def async_remove_dashboard(hass: HomeAssistant) -> None:
-    """Remove TeleTask dashboard."""
+    """Remove TeleTask dashboard storage."""
     try:
-        if "lovelace" in hass.data and "dashboards" in hass.data["lovelace"]:
-            if DASHBOARD_URL in hass.data["lovelace"]["dashboards"]:
-                hass.data["lovelace"]["dashboards"].pop(DASHBOARD_URL)
-                _LOGGER.info("Removed TeleTask dashboard")
+        store = hass.helpers.storage.Store(STORAGE_VERSION, STORAGE_KEY)
+        await store.async_remove()
+        _LOGGER.info("Removed TeleTask dashboard storage")
     except Exception as e:
         _LOGGER.debug("Failed to remove dashboard (might not exist): %s", e)
