@@ -1,7 +1,7 @@
 
 #################################################################################################
 # File:    __init__.py
-# Version: 1.9.3 - Fixed area name conflicts + restored v1.13.1 deduplication (hotfix for v1.14.2)
+# Version: 1.9.4 - Nuclear deduplication: force clear all, then assign one (hotfix for v1.14.3)
 #
 # TeleTask MICROS custom component for Home Assistant
 #
@@ -394,13 +394,23 @@ async def _async_create_areas_and_assign_entities(
         except Exception as e:
             _LOGGER.warning("Failed to process entity %s: %s", entity_entry.entity_id, e)
 
-    # Second pass: for each device, select the preferred entity and assign it
-    # Unassign duplicate entities immediately (v1.13.1 pattern)
+    # Second pass: NUCLEAR OPTION - Force unassign ALL entities for each device, then assign preferred only
     for device_key, entities in device_entities.items():
         try:
             teletask_function, teletask_number = device_key
 
-            # Select preferred entity
+            # STEP 1: FORCE unassign ALL entities for this device from ALL areas
+            # This ensures we start with a clean slate
+            for entity_data in entities:
+                entity_entry_to_clear, _, _, _ = entity_data
+                if entity_entry_to_clear.area_id is not None:
+                    entity_registry.async_update_entity(
+                        entity_entry_to_clear.entity_id,
+                        area_id=None
+                    )
+                    _LOGGER.debug("Cleared area assignment for %s", entity_entry_to_clear.entity_id)
+
+            # STEP 2: Select preferred entity
             # For relays (function=1), prefer light over switch
             # For others, just take the first one
             preferred_entity = entities[0]
@@ -413,28 +423,17 @@ async def _async_create_areas_and_assign_entities(
                         preferred_entity = entity_data
                         break
 
+            # STEP 3: Assign ONLY the preferred entity to the correct area
             entity_entry, state, room, domain = preferred_entity
             target_area_id = room_to_area_id[room]
 
-            # Assign only the preferred entity
-            if entity_entry.area_id != target_area_id:
-                entity_registry.async_update_entity(
-                    entity_entry.entity_id,
-                    area_id=target_area_id
-                )
-                entities_assigned += 1
-                _LOGGER.debug("Assigned %s to area '%s' (preferred for device %s)",
-                            entity_entry.entity_id, room, device_key)
-
-            # Unassign other entities for this device (duplicates) - do this IMMEDIATELY
-            for entity_data in entities:
-                other_entry, _, _, _ = entity_data
-                if other_entry.entity_id != entity_entry.entity_id and other_entry.area_id is not None:
-                    entity_registry.async_update_entity(
-                        other_entry.entity_id,
-                        area_id=None
-                    )
-                    _LOGGER.debug("Unassigned duplicate entity %s from areas", other_entry.entity_id)
+            entity_registry.async_update_entity(
+                entity_entry.entity_id,
+                area_id=target_area_id
+            )
+            entities_assigned += 1
+            _LOGGER.info("Assigned %s to area '%s' (device %s-%s, cleared %d duplicates)",
+                        entity_entry.entity_id, room, teletask_function, teletask_number, len(entities) - 1)
 
         except Exception as e:
             _LOGGER.warning("Failed to assign device %s to area: %s", device_key, e)
